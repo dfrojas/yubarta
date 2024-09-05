@@ -15,7 +15,7 @@ Yubarta uses Poetry for dependency management. To install the project, follow th
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/yubarta.git
+   git clone https://github.com/dfrojas/yubarta.git
    cd yubarta
    ```
 
@@ -80,4 +80,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - Diego Fernando Rojas <hello@dfrojas.com>
 
-For more information, visit the [Yubarta GitHub repository](https://github.com/yourusername/yubarta).
+For more information, visit the [Yubarta GitHub repository](https://github.com/dfrojas/yubarta).
