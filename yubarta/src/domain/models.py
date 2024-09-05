@@ -1,20 +1,17 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Optional
 
-@dataclass
-class EBPFProgram:
+class EBPFProgram(BaseModel):
     name: str
     code: str
     attach_to: str
 
-@dataclass
-class TargetMachine:
+class TargetMachine(BaseModel):
     hostname: str
     username: str
     ssh_key_path: str
 
-@dataclass
-class EBPFDeployment:
+class EBPFDeployment(BaseModel):
     reference: str
     ebpf_program: EBPFProgram
     target_machine: TargetMachine

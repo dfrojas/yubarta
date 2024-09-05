@@ -1,33 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel
 from fastapi.responses import Response
-# from ..service_layer import services
-# from ..adapters import unit_of_work
-from ...domain import models
-import uvicorn
-app = FastAPI()
+from yubarta.src.domain import models
+# from .app import app  # Import the app instance from app.py
+
+from fastapi import APIRouter
+
+router = APIRouter()
+
 
 class DeploymentCreate(BaseModel):
     metadata: dict
     spec: dict
 
 
-@app.get("/")
-def home():
-    whale_ascii = """
-             .
-            ":"
-          ___:____     |"\/"|
-        ,'        `.    \  /
-        |  O        \___/  |
-    ~^~^~^~^~^~^~^~^~^~^~^~^~
-    """
-    return Response(content=whale_ascii, media_type="text/plain", headers={"Content-Type": "text/plain; charset=utf-8"})
-
-
-@app.post("/api/v1/namespaces/{namespace}/ebpfdeployments")
+@router.post("/api/v1/namespaces/{namespace}/ebpfdeployments")
 async def create_deployment(namespace: str, deployment: DeploymentCreate):
-    # print(deployment.spec, "SPEC")
     try:
         ebpf_program = models.EBPFProgram(**deployment.spec['program'])
         target_machine = models.TargetMachine(**deployment.spec['target'])
