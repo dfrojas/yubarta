@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.responses import Response
 # from ..service_layer import services
 # from ..adapters import unit_of_work
-# from ..domain import model
+from ...domain import models
 import uvicorn
 app = FastAPI()
 
@@ -10,18 +11,26 @@ class DeploymentCreate(BaseModel):
     metadata: dict
     spec: dict
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+
+@app.get("/")
+def home():
+    whale_ascii = """
+             .
+            ":"
+          ___:____     |"\/"|
+        ,'        `.    \  /
+        |  O        \___/  |
+    ~^~^~^~^~^~^~^~^~^~^~^~^~
+    """
+    return Response(content=whale_ascii, media_type="text/plain", headers={"Content-Type": "text/plain; charset=utf-8"})
 
 
 @app.post("/api/v1/namespaces/{namespace}/ebpfdeployments")
 async def create_deployment(namespace: str, deployment: DeploymentCreate):
     # print(deployment.spec, "SPEC")
     try:
-        ebpf_program = model.EBPFProgram(**deployment.spec['program'])
-        target_machine = model.TargetMachine(**deployment.spec['target'])
-
+        ebpf_program = models.EBPFProgram(**deployment.spec['program'])
+        target_machine = models.TargetMachine(**deployment.spec['target'])
         # uow = unit_of_work.SqlAlchemyUnitOfWork()
         # result = services.create_deployment(
         #     reference=deployment.metadata['name'],
