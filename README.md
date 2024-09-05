@@ -1,4 +1,9 @@
-# Yubarta
+# Yubarta (y5a)
+
+<img src="docs/img/yubarta_whale_logo.png" width="150">
+
+----
+
 
 Yubarta is an application for deploying eBPF programs. It provides a simple and efficient way to manage eBPF deployments through a RESTful API and a command-line interface.
 
