@@ -22,6 +22,10 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [lint.per-file-ignores]
 "__init__.py" = ["E402"]
+# TODO: Enable when the files are refactored and usable.
+"src/engine/service_layer/services.py" = ["E501"]
+"src/engine/entrypoints/cli/commands.py" = ["E501"]
+"main.py" = ["E501"]
 
 [format]
 quote-style = "double"

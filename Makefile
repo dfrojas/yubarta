@@ -11,3 +11,9 @@ help:
 check-format: ## Run Ruff without automatic fixing.
 	@echo "🐋 ${GREEN}Checking format code...${NC} 🐋"
 	poetry run ruff check .
+
+.PHONY: fix-format
+fix-format: ## Run Ruff with automatic fixing.
+	@echo "🐋 ${GREEN}Fixing format code...${NC} 🐋"
+	poetry run ruff check --extend-select I --fix .
+	poetry run ruff format .
