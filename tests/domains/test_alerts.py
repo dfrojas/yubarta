@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from src.engine.domains.alerts import Alert, AlertSeverity
-from src.engine.domains.detector import DetectionResult, Detector
-from src.engine.domains.ebpf import TargetMachine
-from src.engine.domains.scanner import Scanner, ScanResult
+from engine.domains.alerts import Alert, AlertSeverity
+from engine.domains.detector import DetectionResult, Detector
+from engine.domains.ebpf import TargetMachine
+from engine.domains.scanner import Scanner, ScanResult
 
 
 def test_alert_creation():

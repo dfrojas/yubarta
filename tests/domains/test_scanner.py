@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pytest
 
-from src.engine.domains.ebpf import TargetMachine
-from src.engine.domains.scanner import Scanner, ScanResult
+from engine.domains.ebpf import TargetMachine
+from engine.domains.scanner import Scanner, ScanResult
 
 
 def test_scanner_creation():

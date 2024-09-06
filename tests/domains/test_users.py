@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.engine.domains.users import User, UserRole
+from engine.domains.users import User, UserRole
 
 
 def test_user_creation():
