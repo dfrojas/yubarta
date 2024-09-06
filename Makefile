@@ -13,7 +13,13 @@ check-format: ## Run Ruff without automatic fixing.
 	poetry run ruff check .
 
 .PHONY: fix-format
-fix-format: ## Run Ruff with automatic fixing.
+fix-format: ## Run Ruff with automatic fixing (A combination of Ruff and Black)
 	@echo "🐋 ${GREEN}Fixing format code...${NC} 🐋"
 	poetry run ruff check --extend-select I --fix .
 	poetry run ruff format .
+	poetry run black .
+
+.PHONY: test
+test: ## Run the test suite
+	@echo "🧪 ${GREEN}Running tests...${NC} 🧪"
+	poetry run pytest
