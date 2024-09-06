@@ -2,3 +2,5 @@
 *.pyc
 # macOS system files
 .DS_Store
+# Test files
+test_yaml.yaml
