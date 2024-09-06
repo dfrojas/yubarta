@@ -1,12 +1,10 @@
-from fastapi import HTTPException
-from pydantic import BaseModel
-from fastapi.responses import Response
-from yubarta.src.domain import models
 # from .app import app  # Import the app instance from app.py
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
-from fastapi import APIRouter
+from yubarta.domain import models
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1")
 
 
 class DeploymentCreate(BaseModel):
@@ -14,11 +12,11 @@ class DeploymentCreate(BaseModel):
     spec: dict
 
 
-@router.post("/api/v1/namespaces/{namespace}/ebpfdeployments")
+@router.post("/namespaces/{namespace}/ebpfdeployments")
 async def create_deployment(namespace: str, deployment: DeploymentCreate):
     try:
-        ebpf_program = models.EBPFProgram(**deployment.spec['program'])
-        target_machine = models.TargetMachine(**deployment.spec['target'])
+        ebpf_program = models.EBPFProgram(**deployment.spec["program"])
+        target_machine = models.TargetMachine(**deployment.spec["target"])
         # uow = unit_of_work.SqlAlchemyUnitOfWork()
         # result = services.create_deployment(
         #     reference=deployment.metadata['name'],
@@ -28,10 +26,14 @@ async def create_deployment(namespace: str, deployment: DeploymentCreate):
         #     uow=uow
         # )
         # print(deployment)
-        return {"message": "Deployment created successfully", "reference": 1}#result.reference}
+        return {
+            "message": "Deployment created successfully",
+            "reference": 1,
+        }  # result.reference}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # # @app.get("/api/v1/namespaces/{namespace}/ebpfdeployments/{name}")
 # # async def get_deployment(namespace: str, name: str):

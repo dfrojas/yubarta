@@ -1,15 +1,17 @@
 from pydantic import BaseModel
-from typing import Optional
+
 
 class EBPFProgram(BaseModel):
     name: str
     code: str
     attach_to: str
 
+
 class TargetMachine(BaseModel):
     hostname: str
     username: str
     ssh_key_path: str
+
 
 class EBPFDeployment(BaseModel):
     reference: str

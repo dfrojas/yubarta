@@ -1,5 +1,6 @@
-from sqlalchemy import Table, MetaData, Column, String, Integer, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import mapper, relationship
+
 from ..domain import model
 
 metadata = MetaData()
@@ -33,10 +34,15 @@ ebpf_deployments = Table(
     Column("status", String(50)),
 )
 
+
 def start_mappers():
     mapper(model.EBPFProgram, ebpf_programs)
     mapper(model.TargetMachine, target_machines)
-    mapper(model.EBPFDeployment, ebpf_deployments, properties={
-        "ebpf_program": relationship(model.EBPFProgram),
-        "target_machine": relationship(model.TargetMachine),
-    })
+    mapper(
+        model.EBPFDeployment,
+        ebpf_deployments,
+        properties={
+            "ebpf_program": relationship(model.EBPFProgram),
+            "target_machine": relationship(model.TargetMachine),
+        },
+    )

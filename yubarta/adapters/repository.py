@@ -1,6 +1,7 @@
 import abc
-from typing import List
+
 from ..domain import model
+
 
 class AbstractRepository(abc.ABC):
     @abc.abstractmethod
@@ -12,8 +13,9 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def list(self) -> List[model.EBPFDeployment]:
+    def list(self) -> list[model.EBPFDeployment]:
         raise NotImplementedError
+
 
 class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session):
@@ -23,7 +25,11 @@ class SqlAlchemyRepository(AbstractRepository):
         self.session.add(deployment)
 
     def get(self, reference):
-        return self.session.query(model.EBPFDeployment).filter_by(reference=reference).first()
+        return (
+            self.session.query(model.EBPFDeployment)
+            .filter_by(reference=reference)
+            .first()
+        )
 
     def list(self):
         return self.session.query(model.EBPFDeployment).all()

@@ -6,7 +6,7 @@ router = APIRouter()
 
 @router.get("/")
 def home():
-    whale_ascii = """
+    whale_ascii = r"""
              .
             ":"
           ___:____     |"\/"|
@@ -14,7 +14,11 @@ def home():
         |  O        \___/  |
     ~^~^~^~^~^~^~^~^~^~^~^~^~
     """
-    return Response(content=whale_ascii, media_type="text/plain", headers={"Content-Type": "text/plain; charset=utf-8"})
+    return Response(
+        content=whale_ascii,
+        media_type="text/plain",
+        headers={"Content-Type": "text/plain; charset=utf-8"},
+    )
 
 
 @router.get("/healthz")
