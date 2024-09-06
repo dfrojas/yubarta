@@ -1,4 +1,4 @@
-from src.engine.domain.ebpf import (
+from src.engine.domains import (
     EBPFDeployment,
     EBPFDeploymentStatus,
     EBPFProgram,

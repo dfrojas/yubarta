@@ -29,8 +29,12 @@ class Scanner(BaseModel):
     last_scan: datetime = None
 
     @classmethod
-    def create(cls, name: str, code: str, attach_to: str) -> "Scanner":
-        return cls(name=name, code=code, attach_to=attach_to)
+    def create(
+        cls, name: str, code: str, attach_to: str, scan_interval: int
+    ) -> "Scanner":
+        return cls(
+            name=name, code=code, attach_to=attach_to, scan_interval=scan_interval
+        )
 
     def scan(self, target_machine: TargetMachine) -> "ScanResult":
         # Scanning logic here

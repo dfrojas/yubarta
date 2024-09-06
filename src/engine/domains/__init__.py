@@ -1,6 +1,6 @@
 from .alerts import Alert, AlertSeverity
 from .detector import DetectionResult, Detector
-from .ebpf import TargetMachine
+from .ebpf import EBPFDeployment, EBPFDeploymentStatus, EBPFProgram, TargetMachine
 from .scanner import Scanner, ScanResult
 from .users import User, UserRole
 
@@ -9,7 +9,10 @@ __all__ = [
     "AlertSeverity",
     "DetectionResult",
     "Detector",
+    "EBPFDeploymentStatus",
+    "EBPFProgram",
     "TargetMachine",
+    "EBPFDeployment",
     "Scanner",
     "ScanResult",
     "User",

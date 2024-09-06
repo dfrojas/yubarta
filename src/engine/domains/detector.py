@@ -36,7 +36,7 @@ class Detector(BaseModel):
     name: str
     code: str
     attach_to: str
-    detection_criteria: dict  # Define what constitutes a detection
+    # detection_criteria: dict  # Define what constitutes a detection
 
     @classmethod
     def create(cls, name: str, code: str, attach_to: str) -> "Detector":
