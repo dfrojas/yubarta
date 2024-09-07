@@ -1,5 +1,6 @@
 import uuid
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -12,10 +13,11 @@ class EBPFDeploymentStatus(Enum):
 
 
 class EBPFProgram(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     code: str
     attach_to: str
+
+    __pydantic_private__: dict[str, Any] = {}
 
     @classmethod
     def create(cls, name: str, code: str, attach_to: str) -> "EBPFProgram":

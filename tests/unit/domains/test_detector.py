@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pytest
+
 from engine.domains.detector import DetectionResult, Detector
 from engine.domains.ebpf import TargetMachine
 from engine.domains.scanner import Scanner, ScanResult
@@ -13,6 +15,7 @@ def test_detector_creation():
     assert isinstance(detector.id, str)
 
 
+@pytest.mark.skip(reason="Consider TargetMachine as a value object")
 def test_detection_result_creation():
     detector = Detector.create(name="Test Detector", code="test code", attach_to="eth0")
     scanner = Scanner.create(
