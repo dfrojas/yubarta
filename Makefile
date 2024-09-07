@@ -19,7 +19,7 @@ fix-format: ## Run Ruff with automatic fixing
 	poetry run ruff format .
 
 .PHONY: force-fix-format
-fix-format: ## Run Black with automatic fixing
+force-fix-format: ## Run Black with automatic fixing
 	@echo "🐋 ${GREEN}Force fixing format code...${NC} 🐋"
 	poetry run black .
 
