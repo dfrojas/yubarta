@@ -1,17 +1,15 @@
-import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
-
-from pydantic import BaseModel, Field
 
 from .ebpf import TargetMachine
 
 
-class ScanResult(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+@dataclass
+class ScanResult:
     scanner: "Scanner"
     target_machine: TargetMachine
     data: dict
-    scanned_at: datetime = Field(default_factory=datetime.utcnow)
+    scanned_at: datetime = field(default_factory=datetime.utcnow)
 
     @classmethod
     def create(
@@ -20,8 +18,8 @@ class ScanResult(BaseModel):
         return cls(scanner=scanner, target_machine=target_machine, data=data)
 
 
-class Scanner(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+@dataclass
+class Scanner:
     name: str
     code: str
     attach_to: str

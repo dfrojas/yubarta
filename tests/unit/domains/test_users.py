@@ -9,7 +9,6 @@ def test_user_creation():
     assert user.username == "testuser"
     assert user.email == "test@example.com"
     assert user.role == UserRole.OPERATOR
-    assert isinstance(user.id, str)
     assert isinstance(user.created_at, datetime)
     assert user.last_login is None
 

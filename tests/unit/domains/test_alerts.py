@@ -25,7 +25,6 @@ def test_alert_creation():
         message="Test alert",
     )
 
-    assert isinstance(alert.id, str)
     assert alert.severity == AlertSeverity.HIGH
     assert alert.message == "Test alert"
     assert isinstance(alert.created_at, datetime)

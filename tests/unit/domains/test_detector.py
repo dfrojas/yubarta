@@ -12,7 +12,6 @@ def test_detector_creation():
     assert detector.name == "Test Detector"
     assert detector.code == "test code"
     assert detector.attach_to == "eth0"
-    assert isinstance(detector.id, str)
 
 
 @pytest.mark.skip(reason="Consider TargetMachine as a value object")

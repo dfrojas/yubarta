@@ -14,7 +14,6 @@ def test_scanner_creation():
     assert scanner.code == "test code"
     assert scanner.attach_to == "eth0"
     assert scanner.scan_interval == 60
-    assert isinstance(scanner.id, str)
     assert scanner.last_scan is None
 
 

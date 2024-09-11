@@ -1,19 +1,16 @@
-import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
-
-from pydantic import BaseModel, Field
 
 from .scanner import ScanResult
 
 
-class DetectionResult(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+@dataclass
+class DetectionResult:
     detector: "Detector"
     scan_result: "ScanResult"
     is_detected: bool
     details: dict
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
-    # TODO: Add severity
+    detected_at: datetime = field(default_factory=datetime.utcnow)
 
     @classmethod
     def create(
@@ -31,12 +28,11 @@ class DetectionResult(BaseModel):
         )
 
 
-class Detector(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+@dataclass
+class Detector:
     name: str
     code: str
     attach_to: str
-    # detection_criteria: dict  # Define what constitutes a detection
 
     @classmethod
     def create(cls, name: str, code: str, attach_to: str) -> "Detector":

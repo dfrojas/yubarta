@@ -1,8 +1,7 @@
-import uuid
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
-from pydantic import BaseModel, Field
+# LEER: https://claude.ai/chat/f88c230e-64fe-4bd9-90c2-64351017d2f7
 
 
 class EBPFDeploymentStatus(Enum):
@@ -12,20 +11,19 @@ class EBPFDeploymentStatus(Enum):
     FAILED = "Failed"
 
 
-class EBPFProgram(BaseModel):
+@dataclass
+class EBPFProgram:
     name: str
     code: str
     attach_to: str
-
-    __pydantic_private__: dict[str, Any] = {}
 
     @classmethod
     def create(cls, name: str, code: str, attach_to: str) -> "EBPFProgram":
         return cls(name=name, code=code, attach_to=attach_to)
 
 
-# QUESTION: TargetMachine should be a value object, not a domain object?
-class TargetMachine(BaseModel, frozen=True):
+@dataclass(frozen=True)
+class TargetMachine:
     hostname: str
     username: str
     ssh_key_path: str
@@ -43,8 +41,8 @@ class TargetMachine(BaseModel, frozen=True):
         return hash((self.hostname, self.username, self.ssh_key_path))
 
 
-class EBPFDeployment(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+@dataclass
+class EBPFDeployment:
     reference: str
     ebpf_program: EBPFProgram
     target_machine: TargetMachine
@@ -65,11 +63,3 @@ class EBPFDeployment(BaseModel):
             target_machine=target_machine,
             namespace=namespace,
         )
-
-    def deploy(self) -> None:
-        self.status = EBPFDeploymentStatus.DEPLOYING
-        # Deployment logic here
-        self.status = EBPFDeploymentStatus.DEPLOYED
-
-    def fail(self) -> None:
-        self.status = EBPFDeploymentStatus.FAILED
