@@ -6,6 +6,7 @@ class DeploymentStatus(str, Enum):
     RUNNING = "Running"
     FAILED = "Failed"
 
+
 # class AlertSeverity(Enum):
 #     LOW = "Low"
 #     MEDIUM = "Medium"
@@ -48,6 +49,7 @@ class DeploymentStatus(str, Enum):
 
 # class DetectorRules(Enum):
 #     tipo (CPU, MEM, NET, FILE)
-#     regla (porcentaje de uso de cpu, porcentaje de uso de memoria, porcentaje de uso de red, tamaño de archivo)
+#     regla (porcentaje de uso de cpu, porcentaje de uso de
+#     memoria, porcentaje de uso de red, tamaño de archivo)
 #     valor (20, 80, 100, 1024)
 #     operador (>, <, >=, <=, ==, !=)

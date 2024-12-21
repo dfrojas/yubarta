@@ -15,4 +15,5 @@ class DeploymentController:
     def run(self):
         for machine in self.deployment.machines:
             client = self._connect_to_machine(machine)
+            print(client.exec_command("ls -la")[1])  # Excute the deployment using the step by step class
         return self.deployment

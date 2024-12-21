@@ -12,7 +12,7 @@ router = APIRouter()
 async def create_deployment(config: dict):
     try:
         deployment = EBPFDeployment.parse_obj(config)
-        result = DeploymentController(deployment).run()
+        DeploymentController(deployment).run()
 
         return Response(
             status_code=HTTPStatus.OK,

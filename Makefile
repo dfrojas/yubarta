@@ -17,15 +17,10 @@ check-format: ## Run Ruff without automatic fixing.
 	poetry run ruff check .
 
 .PHONY: fix-format
-fix-format: ## Run Ruff with automatic fixing
+fix-format: ## Run Ruff with automatic fixing (linter and automatic formatter)
 	@echo "🐋 ${GREEN}Fixing format code...${NC} 🐋"
-	poetry run ruff check --extend-select I --fix .
 	poetry run ruff format .
-
-.PHONY: force-fix-format
-force-fix-format: ## Run Black with automatic fixing
-	@echo "🐋 ${GREEN}Force fixing format code...${NC} 🐋"
-	poetry run black .
+	poetry run ruff check --fix .
 
 .PHONY: test
 test: ## Run the test suite

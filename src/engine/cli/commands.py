@@ -16,9 +16,7 @@ def apply(config_file: str):
         config_data = yaml.safe_load(file)
 
     # Siempre pasamos por el API server
-    response = requests.post(
-        f"{settings.API_URL}/api/v1/deployments", json=config_data
-    )
+    response = requests.post(f"{settings.API_URL}/api/v1/deployments", json=config_data)
 
     if response.status_code == HTTPStatus.OK:
         typer.echo("Successfully applied configuration")
