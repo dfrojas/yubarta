@@ -7,6 +7,10 @@ NC=\033[0m
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: init-api
+init-api: ## Run the API server
+	poetry run yubarta-api
+
 .PHONY: check-format
 check-format: ## Run Ruff without automatic fixing.
 	@echo "🐋 ${GREEN}Checking format code...${NC} 🐋"
