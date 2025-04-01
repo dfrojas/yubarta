@@ -40,8 +40,10 @@ class SSHClient:
             )
         except Exception as e:
             return -1, "", str(e)
-        finally:
-            self.close()
+        # finally:
+        #     self.close()
 
     def close(self):
-        self.client.close()
+        if self.client:
+            self.client.close()
+            self.client = None

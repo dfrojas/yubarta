@@ -4,3 +4,6 @@
 .DS_Store
 # Test files
 test_yaml.yaml
+__pycache__/
+yubarta.db
+.env

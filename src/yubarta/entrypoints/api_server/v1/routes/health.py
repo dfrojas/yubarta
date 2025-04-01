@@ -1,10 +1,12 @@
-from fastapi import APIRouter
-from fastapi.responses import Response
+from http import HTTPStatus
 
-router = APIRouter()
+from fastapi import APIRouter, Request, Response, FastAPI
+from fastapi.responses import JSONResponse
+
+router = APIRouter(prefix="/z", tags=["health"])
 
 
-@router.get("/")
+@router.get("/whale")
 def home():
     whale_ascii = r"""
              .

@@ -1,0 +1,9 @@
+kind: "deployment"
+program:
+  name: "hello"
+  code: "./code.py"
+  attach_to: "tcp_connect"
+machines:
+  - hostname: "142.93.125.191"
+    username: "root"
+    ssh_key_path: "/home/user/.ssh/id_rsa"

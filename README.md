@@ -46,13 +46,13 @@ The server will start on `http://0.0.0.0:8000`.
 To use the CLI, run:
 
 ```
-poetry run yubarta-cli apply <path_to_yaml_file>
+poetry run yubarta-cli deploy <path_to_yaml_file>
 ```
 
 You can specify a custom API URL using the `--api-url` option:
 
 ```
-poetry run yubarta-cli apply <path_to_yaml_file> --api-url http://custom-api-url:8000
+poetry run yubarta-cli deploy <path_to_yaml_file> --api-url http://custom-api-url:8000
 ```
 
 ## Configuration

@@ -1,18 +1,23 @@
 [tool.poetry]
-name = "yubarta"
+name = "Yubarta"
 version = "0.1.0"
-description = "An application to deploy eBPF programs to remote machines"
+description = ""
 authors = ["Diego Fernando Rojas <hello@dfrojas.com>"]
 packages = [
     { include = "engine", from = "src" }
 ]
 
-[tool.poetry.scripts]
-yubarta-api  = "engine.api_server.launcher:start_api"
-yubarta-cli = "engine.cli.commands:app"
+# # [tool.poetry.scripts]
+# # yubarta-api  = "uvicorn.main:run engine.api_server.main:app --host 0.0.0.0 --port 8000 --reload"
+# # yubarta-api = "uvicorn:run(app='engine.api_server.main:app', host='0.0.0.0', port=8000, reload=True)"
+# # dev = "uvicorn:run(app='engine.api_server.v1.main:app', host='0.0.0.0', port=8000, reload=True)"
+
+# # yubarta-api-prod  = "uvicorn.main:run --app engine.api_server.app:app --workers 4"
+# yubarta-cli = "engine.cli.commands:app"
+# yubarta-director = "engine.director:main"
 
 [tool.poetry.dependencies]
-python = "^3.10"  # REMINDER: Make it a min 3.10
+python = "^3.11"  # REMINDER: Make it a min 3.10
 typer = "^0.9.0"
 pyyaml = "^6.0.1"
 requests = "^2.31.0"
@@ -22,6 +27,9 @@ paramiko = "^3.2.0"
 sqlalchemy = "^2.0.28"
 pydantic = "^2.10.4"
 sqlmodel = "^0.0.22"
+aiosqlite = "^0.19.0"
+greenlet = "^2.0.0"
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3.1"

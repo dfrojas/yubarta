@@ -8,8 +8,8 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: init-api
-init-api: ## Run the API server
-	poetry run yubarta-api
+init-dev-api: ## Run the API server in dev environment
+	poetry run uvicorn yubarta.main:app --host 0.0.0.0 --port 8000 --reload
 
 .PHONY: check-format
 check-format: ## Run Ruff without automatic fixing.
