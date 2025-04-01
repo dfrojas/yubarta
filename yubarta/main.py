@@ -5,7 +5,6 @@ from yubarta.drivers.db.orm import start_mappers
 from yubarta.entrypoints.api_server.v1.router import router as v1_router
 from sqlalchemy.ext.asyncio import AsyncSession
 
-print("HOLAAAAA")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
