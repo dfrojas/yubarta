@@ -1,6 +1,6 @@
 # Yubarta (y5a)
 
-<img src="docs/img/yubarta_whale_logo.png" width="150">
+<img src="documentation/img/yubarta_whale_logo.png" width="150">
 
 ----
 
