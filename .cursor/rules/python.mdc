@@ -1,0 +1,32 @@
+---
+description: How to write Python code
+globs: 
+alwaysApply: false
+---
+# Python guidelines.
+
+Set of rules to define best practices of modern Python
+
+- If a dependency is needed, install it in Poetry using the x.y.z. Never just major version or major and minor version. Always uses major.minor.patch pattern
+- Always uses last Python features
+- Handle errors at the beginning of functions with early returns.
+- Implement proper logging and custom error types.
+- Use shor-circuit where needed to return faster.
+- Always uses double quotes where need it for strings
+- Always uses f-string for concatenation
+- When name a variable, uses descriptive variables names. Do not use single letters like 'i' or 'j'
+- Always type the code like a pro. Consider use T, Var, etc
+- Maximum lenght per line is 89
+- Never use global variables
+- Imports should complaint with isort with the following precedence: standard library, third-party packages, local modules
+- Always add docstrings to classes, functions, modules, etc but only where really need it. For example if a function is called 'is_admin' we do not need to add a docstring that says 'check if is admin'. Add it only to add context about the __why__, and where need it, the __how__
+- Use context managers (__with__) for file operations
+- Use list comprehensions where possible
+- Never use mutable arguments in functions or classes
+- Always use specific exceptions to catch errors instead of general "Exception". Use it only as last resource in the branch of exceptions
+- All the code has to be Ruff compliant.
+- Consider using @dataclass for simple data container classes to reduce boilerplate
+- Use Pydantic only for data that we want to serialize/deserialize
+- Use 'with' statement for thread locks to ensure proper release
+- Consider using named tuples or dataclasses for better code clarity with multiple return values
+- Use more specific exception types derived from Exception base class

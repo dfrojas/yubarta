@@ -1,0 +1,19 @@
+---
+description: 
+globs: **/yubarta/**
+alwaysApply: false
+---
+# Project Structure
+
+The project is based Domain Driven Development but not limited to it. It also uses Hexagonal and Plugin Architectures.
+
+- Always think hard before implement a fancy design pattern. Ask yourself if we really need and the value that it can add to the users/project. But still, stick to DDD, Hexagonal and Plugin patterns.
+- Backend code is in `yubarta`
+- Domains are in `yubarta/core`
+- Adapters are in `yubarta/drivers`
+- Interfaces are in `yubarta/entrypoints`
+- `yubarta/common` serves as a place where we put code that is shared across all layers
+- `yubarta/controllers` is where we place the application logic
+- When I ask to add a new provider, consider use a Plugin Architecture Pattern
+- Use dataclasses for domain/model classes
+- Use classical mapping of SQLAlchemy when a new domain/model is added 

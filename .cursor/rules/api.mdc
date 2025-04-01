@@ -1,0 +1,14 @@
+---
+description: 
+globs: **/entrypoints/api_server/**
+alwaysApply: false
+---
+# General API guidelines
+
+Rules to design the API
+
+- Use Pydantic models for request and response schemas
+- Always take care about rate limiting
+- Follow the Open API specifications (https://spec.openapis.org/oas/latest.html#openapi-specification)
+- Always version the API
+- Follow best practices of API designs (error handling, rate limit, specs, headers, etc)
