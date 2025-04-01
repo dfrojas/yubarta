@@ -3,18 +3,6 @@ name = "Yubarta"
 version = "0.1.0"
 description = ""
 authors = ["Diego Fernando Rojas <hello@dfrojas.com>"]
-packages = [
-    { include = "engine", from = "src" }
-]
-
-# # [tool.poetry.scripts]
-# # yubarta-api  = "uvicorn.main:run engine.api_server.main:app --host 0.0.0.0 --port 8000 --reload"
-# # yubarta-api = "uvicorn:run(app='engine.api_server.main:app', host='0.0.0.0', port=8000, reload=True)"
-# # dev = "uvicorn:run(app='engine.api_server.v1.main:app', host='0.0.0.0', port=8000, reload=True)"
-
-# # yubarta-api-prod  = "uvicorn.main:run --app engine.api_server.app:app --workers 4"
-# yubarta-cli = "engine.cli.commands:app"
-# yubarta-director = "engine.director:main"
 
 [tool.poetry.dependencies]
 python = "^3.11"  # REMINDER: Make it a min 3.10

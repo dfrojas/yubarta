@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from yubarta.drivers.db.orm import mapper_registry, start_mappers
 
-from yubarta.conf import settings
+from yubarta.config import settings
 
 
 class Database:
