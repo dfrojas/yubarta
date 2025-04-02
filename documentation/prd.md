@@ -20,10 +20,6 @@ Yubarta is a highly scalable, event-driven automation platform designed to detec
 - Offer metrics and observability around alert/resolution lifecycles.
 - Configuration via YAML (inspired by Kubernetes style).
 
-**Non-Goals:**
-- Real-time visual dashboards (provided by external integrations).
-- Long-term historical analysis or full-featured SIEM capabilities.
-
 ---
 
 **2. User Stories**
@@ -38,12 +34,15 @@ Yubarta is a highly scalable, event-driven automation platform designed to detec
 
 **3. Functional Requirements**
 
-**3.1 Alert Ingestion & Detection**
+**3.1 API Server:**
+- The central gateway for all requests (like the Kubernetes API server). Handles validation, configuration - persistence, state querying, and coordination between orchestrator, CLI, and workers. All interactions (CLI, - - dashboard, orchestrator, webhook integrations) go through this API.
+
+**3.2 Alert Ingestion & Detection**
 - Support for webhook ingestion from Datadog, Prometheus, and other providers.
 - Native anomaly detection via command execution on remote machines.
 - Rate-limiting and queuing of alerts to prevent overload.
 
-**3.2 Remediation Execution**
+**3.3 Remediation Execution**
 - Remediations can be written by users in any language (e.g., Python, Go, Rust, C++).
 - Platform-provided remediation library (batteries included).
 - Multi-step workflows with conditional branching and checks.
@@ -59,28 +58,28 @@ Yubarta is a highly scalable, event-driven automation platform designed to detec
 - YAML configuration includes metadata to specify when and how to execute binaries.
 - Detection of false alarms via pre-remediation checkers.
 
-**3.3 Workflow Orchestration**
+**3.4 Workflow Orchestration**
 - State machine to manage alert lifecycles.
 - Retry logic with exponential backoff.
 - Support for idempotent and non-idempotent operations.
 - Timeouts and circuit breakers for long-running or failing steps.
 
-**3.4 Scheduling & Distribution**
+**3.5 Scheduling & Distribution**
 - Spread-based scheduling algorithm for remote probe distribution.
 - Use of bin packing algorithm optionally for resource optimization.
 - Distributed queue for scalable task dispatch.
 
-**3.5 Security & Isolation**
+**3.6 Security & Isolation**
 - Containerized sandbox for executing remediation code.
 - Per-run isolation to prevent data leakage or interference.
 - Secrets management and RBAC for remote access.
 
-**3.6 Observability & Feedback Loop**
+**3.7 Observability & Feedback Loop**
 - Track false alarms and remediation success/failure.
 - Emit logs, traces, and metrics for all alert workflows.
 - Integration with external systems (e.g., Slack, email, Prometheus).
 
-**3.7 Persistence**
+**3.8 Persistence**
 - Scalable database for workflows, alert metadata, and logs.
 - Caching for ephemeral state (e.g., Redis).
 - Eventual consistency model with high throughput.

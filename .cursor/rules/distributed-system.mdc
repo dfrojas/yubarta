@@ -23,8 +23,21 @@ Design all core components (alert ingestion, orchestration, remediation workers)
 - Do not block—defer work using queues.
 
 ---
+## 2. API Server
 
-## 2. Queueing and Rate Control
+All components interact via the central api_server.
+
+Responsible for:
+
+- Validating and persisting YAML configurations.
+- Exposing REST endpoints for workflow triggering and state tracking.
+- Acting as the single source of truth for alerts, remediations, and execution state.
+- Must support token-based auth, RBAC, and observability hooks.
+- All orchestration and execution is read/write gated through this component.
+
+---
+
+## 3. Queueing and Rate Control
 
 To support 2M alarms and 5K+ machines:
 
@@ -39,7 +52,7 @@ To support 2M alarms and 5K+ machines:
 
 ---
 
-## 3. Remediation Execution Strategy
+## 4. Remediation Execution Strategy
 
 Support user-defined remediations in any language, isolated and wrapped by the platform.
 
@@ -74,7 +87,7 @@ remediation:
 - All code must be idempotent or protected by distributed locks.
 - Limit CPU and memory per task.
 
-## 4. Workflow Orchestration
+## 5. Workflow Orchestration
 
 Each alert spawns a stateful remediation workflow with multiple conditional steps:
 
@@ -87,7 +100,7 @@ Each alert spawns a stateful remediation workflow with multiple conditional step
 - Track all transitions in a persistent store.
 - Separate orchestration logic from execution logic.
 
-## 5. Scheduling Algorithms
+## 6. Scheduling Algorithms
 
 For probe execution or remediation dispatch across nodes:
 
@@ -101,7 +114,7 @@ For probe execution or remediation dispatch across nodes:
 - Implement node health checks to inform the scheduler.
 - Schedule tasks where data locality improves performance, when applicable.
 
-## 6. Observability
+## 7. Observability
 
 Build full observability into the platform:
 
@@ -115,7 +128,7 @@ Build full observability into the platform:
 - Loki or Elasticsearch for logs
 - Jaeger or Tempo for distributed tracing
 
-## 7. Security & Isolation
+## 8. Security & Isolation
 
 - Execute all user-defined code in isolated, ephemeral environments.
 - Use Docker/Firecracker microVMs with restricted network/FS access.
@@ -128,7 +141,7 @@ Build full observability into the platform:
 - Enforce quotas (time, memory, CPU).
 - Track each remediation attempt with full metadata.
 
-## 8. Persistence & State Management
+## 9. Persistence & State Management
 
 Store alert and workflow data in scalable, reliable storage:
 
@@ -142,7 +155,7 @@ Store alert and workflow data in scalable, reliable storage:
 - Use retries with idempotency tokens.
 - Implement snapshots or checkpoints for long-running workflows.
 
-## 9. Performance Targets
+## 10. Performance Targets
 
 - Alert to remediation trigger latency < 500ms
 - System throughput: 50,000 alerts/min (target)
