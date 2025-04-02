@@ -1,0 +1,152 @@
+---
+description: Distributed system guidelines
+globs: 
+alwaysApply: false
+---
+# Distributed Systems Architecture Guidelines for Yubarta
+
+Always that you write code, remember that the service has to be highly scalable. These rule provides context and best practices for building **highly scalable**, **resilient**, and **low-latency** distributed systems, specifically tailored for Yubarta, a platform that detects anomalies and runs user-defined remediations at massive scale.
+
+---
+
+## 1. Event-Driven Microservice Architecture
+
+Design all core components (alert ingestion, orchestration, remediation workers) as **stateless microservices**. Use message queues to decouple each stage.
+
+- Ingestion services should enqueue alerts without processing logic.
+- Workers should consume jobs from queues and emit events with results.
+- Use pub/sub or event streaming systems like Kafka or NATS.
+
+### Guidelines
+- Services must scale horizontally (stateless).
+- Use orchestration frameworks (Temporal, Cadence, or custom async FSMs).
+- Do not block—defer work using queues.
+
+---
+
+## 2. Queueing and Rate Control
+
+To support 2M alarms and 5K+ machines:
+
+- Use rate limiting at ingress points to protect against alert storms.
+- Backpressure must be built-in using queue depth or system metrics.
+- Retries should use exponential backoff + jitter.
+
+### Queue Recommendations
+- Kafka for durability and replayability.
+- Redis Streams or RabbitMQ for low-latency task queues.
+- Use a separate DLQ (dead letter queue) for failed jobs.
+
+---
+
+## 3. Remediation Execution Strategy
+
+Support user-defined remediations in any language, isolated and wrapped by the platform.
+
+1. Users can define remediations via YAML:
+
+   ```yaml
+   remediation:
+     - restart: nginx
+     - upgrade_kernel: latest
+  ```
+
+2. Or use Python
+
+  ```python
+  from yubarta.remediation import Step
+
+  class RestartService(Step):
+    def run(self):
+        self.ssh("systemctl restart nginx")
+  ```
+
+3. For binaries (Go, Rust, etc.), use metadata in YAML to define when and how to run:
+
+```yaml
+remediation:
+  - binary: ./bin/remediate_nginx
+    when: "service_down"
+```
+
+### Guidelines
+- Use container sandboxing (Docker, Firecracker) for all executions.
+- All code must be idempotent or protected by distributed locks.
+- Limit CPU and memory per task.
+
+## 4. Workflow Orchestration
+
+Each alert spawns a stateful remediation workflow with multiple conditional steps:
+
+- Check → Step 1 → Check → Step 2 → Notify
+- If resolved at any point, mark the alert successful.
+- If no steps succeed, escalate or flag as unresolved.
+
+### Best Practices
+- Implement workflows as finite state machines (FSM).
+- Track all transitions in a persistent store.
+- Separate orchestration logic from execution logic.
+
+## 5. Scheduling Algorithms
+
+For probe execution or remediation dispatch across nodes:
+
+- Use Spread Scheduling by default to minimize the chance of overload.
+- Optionally allow Bin Packing for cost optimization in steady state.
+- Integrate with orchestrators like Nomad or Kubernetes.
+
+### Guidelines
+
+- Avoid “hot nodes” by observing task density.
+- Implement node health checks to inform the scheduler.
+- Schedule tasks where data locality improves performance, when applicable.
+
+## 6. Observability
+
+Build full observability into the platform:
+
+- Trace all alerts from ingestion to final remediation result.
+- Emit logs, metrics, and spans using OpenTelemetry.
+- Detect false alarms and mark them using checker functions.
+
+### Tools
+
+- Prometheus for metrics
+- Loki or Elasticsearch for logs
+- Jaeger or Tempo for distributed tracing
+
+## 7. Security & Isolation
+
+- Execute all user-defined code in isolated, ephemeral environments.
+- Use Docker/Firecracker microVMs with restricted network/FS access.
+- Secrets must be injected securely using a vault system.
+- RBAC and audit logs must be enforced for all remediation actions.
+
+### Guidelines
+
+- Never run untrusted code directly on the host.
+- Enforce quotas (time, memory, CPU).
+- Track each remediation attempt with full metadata.
+
+## 8. Persistence & State Management
+
+Store alert and workflow data in scalable, reliable storage:
+
+- PostgreSQL for metadata and orchestration state.
+- Redis for ephemeral cache and locks.
+- Object store (S3/GCS) for binaries and large logs.
+
+### Guidelines
+
+- Ensure workflow state is persisted after each transition.
+- Use retries with idempotency tokens.
+- Implement snapshots or checkpoints for long-running workflows.
+
+## 9. Performance Targets
+
+- Alert to remediation trigger latency < 500ms
+- System throughput: 50,000 alerts/min (target)
+- False positive remediation rate < 0.5%
+- 99% of workflows must complete within defined SLA
+
+
