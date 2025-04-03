@@ -9,7 +9,7 @@ from yubarta.config import settings
 
 
 class Database:
-    def __init__(self, db_url: str = settings.DATABASE_URL):
+    def __init__(self, db_url: str = settings.DATABASE_URI):
         self.engine = create_async_engine(db_url, echo=True, future=True)
         self.session_factory = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -23,7 +23,7 @@ class Database:
         return self.session_factory()
 
 
-async def init_database(db_url: str = settings.DATABASE_URL):
+async def init_database(db_url: str = settings.DATABASE_URI):
     """Initialize the database and return a Database instance"""
     start_mappers()
     db = Database(db_url)

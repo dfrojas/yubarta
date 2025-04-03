@@ -16,7 +16,7 @@ Set of rules to define best practices of modern Python
 - Always uses f-string for concatenation
 - When name a variable, uses descriptive variables names. Do not use single letters like 'i' or 'j'
 - Always type the code like a pro. Consider use T, Var, etc
-- Maximum lenght per line is 89
+- Maximum lenght per line is 120
 - Never use global variables
 - Imports should complaint with isort with the following precedence: standard library, third-party packages, local modules
 - Always add docstrings to classes, functions, modules, etc but only where really need it. For example if a function is called 'is_admin' we do not need to add a docstring that says 'check if is admin'. Add it only to add context about the __why__, and where need it, the __how__
