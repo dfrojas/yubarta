@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: yubarta-api
+    command: >
+      uvicorn yubarta.main:app --host 0.0.0.0 --port 8080 --reload
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - kafka
+    environment:
+      - ENV=dev
+      - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+  orchestrator:
+    build: .
+    container_name: yubarta-orchestrator
+    command: python -m yubarta.controllers.coordinator.director
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+  worker:
+    build: .
+    container_name: yubarta-worker
+    command: python -m yubarta.controllers.coordinator.injector
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+  postgres:
+    image: postgres:15
+    container_name: yubarta-db
+    environment:
+      POSTGRES_USER: yubarta
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: yubarta
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  pgdata:
