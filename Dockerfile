@@ -2,28 +2,31 @@
 
 FROM python:3.12-slim
 
-# Set environment
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/root/.local/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# Install OS deps
+# Install build dependencies first - these change less frequently
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install poetry
+# Install poetry with pip - separate layer for package manager
+RUN pip install --no-cache-dir poetry && \
+    poetry config virtualenvs.create false
 
-# Copy only necessary files for dependency installation
-COPY pyproject.toml ./
-COPY poetry.lock* ./
-RUN poetry config virtualenvs.create false \
- && poetry install --no-interaction --no-ansi --no-root
+# Copy dependency files only
+COPY pyproject.toml poetry.lock* ./
 
-# Copy project code
+# Install dependencies - will be cached unless poetry files change
+RUN poetry install --no-interaction --no-ansi --no-root --no-cache
+
+# Copy project code - this layer changes most frequently
 COPY yubarta ./yubarta
 
 # Commented temporarily because this command only would start one of the 3 containers

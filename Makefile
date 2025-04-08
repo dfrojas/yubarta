@@ -25,10 +25,10 @@ test: ## Run the test suite
 	poetry run pytest
 
 build-image: ## Build the development image
-	docker compose -f docker-compose.dev.yaml build --no-cache
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yaml build --no-cache
 
 run-dev: ## Run all development containers
-	docker compose -f docker-compose.dev.yaml up -d
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yaml up -d
 
 generate-lock:  ## Regenerate the lock file and copy it from the container to the local environment.
 	@echo "🚧 Building Docker image..."
