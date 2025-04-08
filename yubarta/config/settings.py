@@ -29,3 +29,14 @@ def build_database_uri(db_config: dict) -> str:
     return f"{engine}://{user}:{password}@{host}:{port}/{name}"
 
 DATABASE_URI = build_database_uri(DATABASE_CONFIG)
+
+# Kafka Settings
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
+KAFKA_ALERT_TOPIC = "alerts"
+KAFKA_CONSUMER_GROUP = "alert_processor"
+KAFKA_MAX_BATCH_SIZE = 1000
+KAFKA_MAX_WAIT_MS = 500
+KAFKA_COMPRESSION_TYPE = "gzip"  # Efficient for JSON payloads
+KAFKA_ACKS = "all"  # Ensures durability
+KAFKA_RETRIES = 3
+KAFKA_RETRY_BACKOFF_MS = 100
