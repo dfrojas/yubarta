@@ -15,11 +15,10 @@ Design all core components (alert ingestion, orchestration, remediation workers)
 
 - Ingestion services should enqueue alerts without processing logic.
 - Workers should consume jobs from queues and emit events with results.
-- Use pub/sub or event streaming systems like Kafka or NATS.
+- Use pub/sub or event streaming systems like Kafka.
 
 ### Guidelines
 - Services must scale horizontally (stateless).
-- Use orchestration frameworks (Temporal, Cadence, or custom async FSMs).
 - Do not block—defer work using queues.
 
 ---

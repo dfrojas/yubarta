@@ -22,6 +22,6 @@ async def lifespan(app: FastAPI):
     yield
     
     # Cleanup
-    await producer.stop()
+    # await producer.stop()
 
 app = FastAPI(lifespan=lifespan)

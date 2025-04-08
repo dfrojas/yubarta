@@ -10,7 +10,7 @@ class KafkaProducer:
     def __init__(self):
         self.producer: Optional[AIOKafkaProducer] = None
         self.bootstrap_servers = settings.KAFKA_BOOTSTRAP_SERVERS
-        
+
     async def start(self):
         """Initialize and start the Kafka producer"""
         if self.producer is None:
@@ -21,8 +21,8 @@ class KafkaProducer:
                 max_batch_size=settings.KAFKA_MAX_BATCH_SIZE,
                 max_request_size=settings.KAFKA_MAX_BATCH_SIZE * 2,
                 retry_backoff_ms=settings.KAFKA_RETRY_BACKOFF_MS,
-                retries=settings.KAFKA_RETRIES,
-                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+                # retries=settings.KAFKA_RETRIES,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8")
             )
             await self.producer.start()
             logger.info("Kafka producer started successfully")
@@ -34,7 +34,7 @@ class KafkaProducer:
             self.producer = None
             logger.info("Kafka producer stopped")
 
-    async def send_message(self, topic: str, value: Any, key: Optional[str] = None) -> None:
+    async def publish(self, topic: str, value: Any, key: Optional[str] = None) -> None:
         """Send a message to a Kafka topic
         
         Args:
@@ -44,9 +44,11 @@ class KafkaProducer:
         """
         if self.producer is None:
             raise RuntimeError("Kafka producer not started")
-        
+
+        print(key, "KEY")
+
         try:
-            key_bytes = key.encode('utf-8') if key else None
+            key_bytes = key.encode("utf-8") if key else None
             await self.producer.send_and_wait(topic, value, key=key_bytes)
             logger.debug(f"Message sent to topic {topic}")
         except Exception as e:
@@ -54,4 +56,4 @@ class KafkaProducer:
             raise
 
 # Global producer instance
-producer = KafkaProducer() 
+producer = KafkaProducer()

@@ -17,7 +17,7 @@ class AlertReceiptResponse(BaseModel):
     A lightweight response returned immediately when an alert is received.
     This allows for fast response times while processing continues asynchronously.
     """
-    alert_id: int
+    alert_id: str
     status: str
     received_at: datetime = Field(default_factory=datetime.utcnow)
 

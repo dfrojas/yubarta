@@ -9,6 +9,7 @@ alerts = Table(
     mapper_registry.metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("source", String(255), nullable=False),
+    # Column("fingerprint", String(255), nullable=False, index=True),  # Pending to migration
     Column("fingerprint", String(255), nullable=True),
     Column("severity", String(255), nullable=False),
     Column("received_at", Date, nullable=False),

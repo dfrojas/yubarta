@@ -6,7 +6,6 @@ class SqlAlchemyAlarmRepository:
         self.session = session
 
     async def add(self, alert: Alert):
-        print("Adding alert")
         try:
             self.session.add(alert)
             await self.session.commit()
@@ -14,4 +13,3 @@ class SqlAlchemyAlarmRepository:
         except Exception as e:
             await self.session.rollback()
             raise e
-

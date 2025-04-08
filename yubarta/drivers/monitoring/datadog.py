@@ -5,8 +5,10 @@ from yubarta.core.enums import AlertSource, AlertStatus
 
 
 class DatadogHandler:
-    def __init__(self, alarm: dict):
+    def __init__(self, alarm: dict, fingerprint: str, received_at: str):
         self.alarm = alarm
+        self.fingerprint = fingerprint
+        self.received_at = received_at
 
     def process(self) -> Alert:
         return Alert(
@@ -19,13 +21,7 @@ class DatadogHandler:
             },
             raw=self.alarm,
             status=AlertStatus.PENDING,
-            received_at=datetime.utcnow(),
-            status_updated_at=datetime.utcnow(),
-            fingerprint=self._generate_fingerprint()
+            received_at=self.received_at,
+            status_updated_at=self.received_at,
+            fingerprint=self.fingerprint
         )
-
-    def _generate_fingerprint(self) -> str:
-        # In a real implementation, this would create a unique fingerprint based on alert attributes
-        # to help with deduplication
-        alert_id = self.alarm.get("alert_id", "")
-        return f"datadog:{alert_id}" if alert_id else str(uuid.uuid4())

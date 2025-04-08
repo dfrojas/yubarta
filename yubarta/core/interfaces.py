@@ -23,3 +23,8 @@ class AlarmStorageInterface(Protocol):
 
     def update(self, alert: Alert):
         ...
+
+
+class AlarmMessagingInterface(Protocol):
+    def publish(self, alert: Alert):
+        ...

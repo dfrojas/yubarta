@@ -1,43 +1,43 @@
+import hashlib
 from http import HTTPStatus
+from datetime import datetime, timezone
+import json
+from dataclasses import asdict
+
 
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from yubarta.core.models import Alert
+from yubarta.core.enums import AlertSource
 
 from yubarta.drivers.monitoring.datadog import DatadogHandler
 from yubarta.entrypoints.api_server.v1.schemas import AlertReceiptResponse
-import asyncio
 from yubarta.core.enums import AlertStatus
 from yubarta.core.interfaces import AlarmStorageInterface
 from yubarta.drivers.db.repository import SqlAlchemyAlarmRepository
 from yubarta.drivers.db.utils import get_session
+from yubarta.drivers.messaging.kafka import producer
+from yubarta.config import settings
 
-
-alert_queue = asyncio.Queue()  # In-memory queue for now (will be replaced by Kafka later)
+from yubarta.controllers.alarms import AlertController
+from yubarta.common.utils import generate_fingerprint
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
-class AlertService:
-    def __init__(self, repository: AlarmStorageInterface):
-        self.repository = repository
-
-    async def process_alert(self, alert: Alert):
-        await self.repository.add(alert)
-
-
-@router.post("/register/datadog", response_model=AlertReceiptResponse)
+@router.post("/register/datadog", response_model=AlertReceiptResponse, status_code=HTTPStatus.ACCEPTED)
 async def receive_alert(request: Request, db: Session = Depends(get_session)):
     try:
         payload = await request.json()
 
-        alert = DatadogHandler(payload).process()
+        now = datetime.now(timezone.utc).isoformat()
+        fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
+        alert = DatadogHandler(payload, fingerprint, now).process()
 
-        await alert_queue.put(alert)
-        await AlertService(SqlAlchemyAlarmRepository(db)).process_alert(alert)
+        await AlertController(messaging=producer).process_alert(alert)
 
         return AlertReceiptResponse(
-            alert_id=alert.id,
+            alert_id=alert.fingerprint,
             status=AlertStatus.PENDING,
         )
 
