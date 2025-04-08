@@ -14,10 +14,9 @@ from yubarta.core.enums import AlertSource
 from yubarta.drivers.monitoring.datadog import DatadogHandler
 from yubarta.entrypoints.api_server.v1.schemas import AlertReceiptResponse
 from yubarta.core.enums import AlertStatus
-from yubarta.core.interfaces import AlarmStorageInterface
-from yubarta.drivers.db.repository import SqlAlchemyAlarmRepository
-from yubarta.drivers.db.utils import get_session
-from yubarta.drivers.messaging.kafka import producer
+from yubarta.core.interfaces import AlarmStorageInterface, AlarmMessagingInterface
+#from yubarta.drivers.messaging.kafka import producer
+from yubarta.drivers.messaging.utils import get_messaging
 from yubarta.config import settings
 
 from yubarta.controllers.alarms import AlertController
@@ -26,7 +25,7 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 @router.post("/register/datadog", response_model=AlertReceiptResponse, status_code=HTTPStatus.ACCEPTED)
-async def receive_alert(request: Request, db: Session = Depends(get_session)):
+async def receive_alert(request: Request, messaging: AlarmMessagingInterface = Depends(get_messaging)):
     try:
         payload = await request.json()
 
@@ -34,7 +33,7 @@ async def receive_alert(request: Request, db: Session = Depends(get_session)):
         fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
         alert = DatadogHandler(payload, fingerprint, now).process()
 
-        await AlertController(messaging=producer).process_alert(alert)
+        await AlertController(messaging=messaging).process_alert(alert)
 
         return AlertReceiptResponse(
             alert_id=alert.fingerprint,

@@ -45,8 +45,6 @@ class KafkaProducer:
         if self.producer is None:
             raise RuntimeError("Kafka producer not started")
 
-        print(key, "KEY")
-
         try:
             key_bytes = key.encode("utf-8") if key else None
             await self.producer.send_and_wait(topic, value, key=key_bytes)
@@ -55,5 +53,4 @@ class KafkaProducer:
             logger.error(f"Failed to send message to Kafka: {str(e)}")
             raise
 
-# Global producer instance
 producer = KafkaProducer()
