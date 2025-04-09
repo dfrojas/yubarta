@@ -33,21 +33,21 @@
 #             raise TypeError(f"Adapter for '{provider}' doesn't implement AlarmInterface protocol")
 
 #         return identificator.process()
-    
+
 #     def _identify_provider(self) -> str:
 #         """
 #         Identify the provider based on the alarm payload.
-#         In a real implementation, this would examine the payload structure 
+#         In a real implementation, this would examine the payload structure
 #         to determine the source.
 #         """
 #         # Explicit provider field (for testing)
 #         if "provider" in self.alarm:
 #             return self.alarm["provider"]
-            
+
 #         # Datadog specific fields
 #         if "alert_type" in self.alarm and ("host" in self.alarm or "org_id" in self.alarm):
 #             return "datadog"
-            
+
 #         # In a real implementation, add more provider detection logic here
-        
+
 #         raise ValueError("Could not identify alarm provider from payload")

@@ -1,6 +1,8 @@
-from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 import logging
 from contextlib import asynccontextmanager
+
+from aiokafka.admin import AIOKafkaAdminClient, NewTopic
+
 from yubarta.config import settings
 from yubarta.drivers.messaging.kafka import producer
 
@@ -15,9 +17,7 @@ class KafkaAdmin:
     @asynccontextmanager
     async def get_admin_client(self):
         """Get an admin client for Kafka operations"""
-        admin_client = AIOKafkaAdminClient(
-            bootstrap_servers=self.bootstrap_servers
-        )
+        admin_client = AIOKafkaAdminClient(bootstrap_servers=self.bootstrap_servers)
         try:
             await admin_client.start()
             yield admin_client
@@ -33,7 +33,7 @@ class KafkaAdmin:
                     NewTopic(
                         name=settings.KAFKA_ALERT_TOPIC,
                         num_partitions=3,  # Start with 3 partitions for parallelism
-                        replication_factor=1  # Single replica for dev, increase for prod
+                        replication_factor=1,  # Single replica for dev, increase for prod
                     )
                 ]
 

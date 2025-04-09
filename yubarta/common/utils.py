@@ -1,5 +1,6 @@
 import hashlib
 
+
 def generate_fingerprint(source: str, timestamp: str) -> str:
     """
     I choose grouped partition strategy key for Kafka. Like this, we can have more information

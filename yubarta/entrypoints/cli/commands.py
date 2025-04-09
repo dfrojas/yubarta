@@ -3,7 +3,6 @@ from http import HTTPStatus
 import requests
 import typer
 import yaml
-
 from engine.conf import settings
 
 app = typer.Typer()

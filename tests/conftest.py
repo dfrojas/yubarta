@@ -1,8 +1,7 @@
 import pytest
+from engine.adapters.orm import mapper_registry, start_mappers
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
-
-from engine.adapters.orm import mapper_registry, start_mappers
 
 
 @pytest.fixture(scope="session")

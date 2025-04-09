@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from .routes import alerts, health
 
 router = APIRouter(prefix="/api/v1")

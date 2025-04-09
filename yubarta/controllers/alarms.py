@@ -1,16 +1,16 @@
-from yubarta.core.interfaces import AlarmStorageInterface, AlarmMessagingInterface
-from yubarta.core.models import Alert
-from yubarta.drivers.messaging.kafka import producer
-from yubarta.config import settings
-from typing import Optional
-from dataclasses import asdict
 import json
+from dataclasses import asdict
+from typing import Optional
+
+from yubarta.config import settings
+from yubarta.core.interfaces import AlarmMessagingInterface, AlarmStorageInterface
+from yubarta.core.models import Alert
 
 
 class AlertController:
-    def __init__(self,
-        storage: Optional[AlarmStorageInterface] = None,
-        messaging: Optional[AlarmMessagingInterface] = None):
+    def __init__(
+        self, storage: Optional[AlarmStorageInterface] = None, messaging: Optional[AlarmMessagingInterface] = None
+    ):
         self.storage = storage
         self.messaging = messaging
 
@@ -20,7 +20,5 @@ class AlertController:
 
         if self.messaging:
             await self.messaging.publish(
-                topic=settings.KAFKA_ALERT_TOPIC,
-                value=json.dumps(asdict(alert)),
-                key=alert.fingerprint
+                topic=settings.KAFKA_ALERT_TOPIC, value=json.dumps(asdict(alert)), key=alert.fingerprint
             )

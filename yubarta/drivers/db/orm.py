@@ -1,5 +1,6 @@
-from sqlalchemy.orm import registry, mapper
-from sqlalchemy import Table, MetaData, Column, Integer, String, Date, ForeignKey, JSON
+from sqlalchemy import JSON, Column, Date, Integer, String, Table
+from sqlalchemy.orm import registry
+
 from yubarta.core.models import Alert
 
 mapper_registry = registry()

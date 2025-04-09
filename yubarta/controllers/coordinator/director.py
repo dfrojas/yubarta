@@ -15,14 +15,14 @@ class Director:
         pass
         # print("[Director] Processing pending alarms...")
 
+
 def main():
     print("[Director] Starting loop...")
     asyncio.run(Director().start())
 
+
 if __name__ == "__main__":
     main()
-
-
 
     # async def process_pending_alarms(self):
     #     session: Session = DBSession()

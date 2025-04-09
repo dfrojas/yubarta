@@ -1,7 +1,5 @@
-from http import HTTPStatus
 
-from fastapi import APIRouter, Request, Response, FastAPI
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Response
 
 router = APIRouter(prefix="/z", tags=["health"])
 

@@ -1,5 +1,5 @@
-from yubarta.drivers.messaging.kafka import producer
 from yubarta.core.interfaces import AlarmMessagingInterface
+from yubarta.drivers.messaging.kafka import producer
 
 
 async def get_messaging() -> AlarmMessagingInterface:

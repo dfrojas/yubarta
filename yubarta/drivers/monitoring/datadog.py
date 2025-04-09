@@ -1,7 +1,5 @@
-from datetime import datetime
-import uuid
-from yubarta.core.models import Alert
 from yubarta.core.enums import AlertSource, AlertStatus
+from yubarta.core.models import Alert
 
 
 class DatadogHandler:
@@ -23,5 +21,5 @@ class DatadogHandler:
             status=AlertStatus.PENDING,
             received_at=self.received_at,
             status_updated_at=self.received_at,
-            fingerprint=self.fingerprint
+            fingerprint=self.fingerprint,
         )

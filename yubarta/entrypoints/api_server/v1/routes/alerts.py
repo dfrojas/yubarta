@@ -1,26 +1,19 @@
-import hashlib
-from http import HTTPStatus
 from datetime import datetime, timezone
-import json
-from dataclasses import asdict
+from http import HTTPStatus
 
-
-from fastapi import APIRouter, Request, Response, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from yubarta.core.models import Alert
-from yubarta.core.enums import AlertSource
 
+from yubarta.common.utils import generate_fingerprint
+from yubarta.controllers.alarms import AlertController
+from yubarta.core.enums import AlertSource, AlertStatus
+from yubarta.core.interfaces import AlarmMessagingInterface
+
+# from yubarta.drivers.messaging.kafka import producer
+from yubarta.drivers.messaging.utils import get_messaging
 from yubarta.drivers.monitoring.datadog import DatadogHandler
 from yubarta.entrypoints.api_server.v1.schemas import AlertReceiptResponse
-from yubarta.core.enums import AlertStatus
-from yubarta.core.interfaces import AlarmStorageInterface, AlarmMessagingInterface
-#from yubarta.drivers.messaging.kafka import producer
-from yubarta.drivers.messaging.utils import get_messaging
-from yubarta.config import settings
 
-from yubarta.controllers.alarms import AlertController
-from yubarta.common.utils import generate_fingerprint
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 

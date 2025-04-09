@@ -1,10 +1,13 @@
-from typing import Any, Optional
 import json
 import logging
+from typing import Any, Optional
+
 from aiokafka import AIOKafkaProducer
+
 from yubarta.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 class KafkaProducer:
     def __init__(self):
@@ -22,7 +25,7 @@ class KafkaProducer:
                 max_request_size=settings.KAFKA_MAX_BATCH_SIZE * 2,
                 retry_backoff_ms=settings.KAFKA_RETRY_BACKOFF_MS,
                 # retries=settings.KAFKA_RETRIES,
-                value_serializer=lambda v: json.dumps(v).encode("utf-8")
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             )
             await self.producer.start()
             logger.info("Kafka producer started successfully")
@@ -36,7 +39,7 @@ class KafkaProducer:
 
     async def publish(self, topic: str, value: Any, key: Optional[str] = None) -> None:
         """Send a message to a Kafka topic
-        
+
         Args:
             topic: The topic to send the message to
             value: The message value to send
@@ -52,5 +55,6 @@ class KafkaProducer:
         except Exception as e:
             logger.error(f"Failed to send message to Kafka: {str(e)}")
             raise
+
 
 producer = KafkaProducer()
