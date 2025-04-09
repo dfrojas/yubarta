@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Response
 
 router = APIRouter(prefix="/z", tags=["health"])

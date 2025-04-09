@@ -24,12 +24,13 @@ async def receive_alert(request: Request, messaging: AlarmMessagingInterface = D
 
         now = datetime.now(timezone.utc).isoformat()
         fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
-        alert = DatadogHandler(payload, fingerprint, now).process()
 
-        await AlertController(messaging=messaging).process_alert(alert)
+        alert_converted = DatadogHandler(payload, fingerprint, now).process()
+
+        await AlertController(messaging=messaging).process_alert(alert_converted)
 
         return AlertReceiptResponse(
-            alert_id=alert.fingerprint,
+            alert_id=alert_converted.fingerprint,
             status=AlertStatus.PENDING,
         )
 
