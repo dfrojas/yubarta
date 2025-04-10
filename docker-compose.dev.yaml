@@ -9,7 +9,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
     container_name: yubarta-api
     command: >
-      uvicorn yubarta.main:app --host 0.0.0.0 --port 8080 --reload
+      /app/bin/wait-for-it.sh kafka:9092 -- uvicorn yubarta.main:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8080:8080"
     volumes:
@@ -29,12 +29,14 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: yubarta-director
+    # deploy:
+    #   mode: replicated
+    #   replicas: 3
     command: python -m yubarta.controllers.director
     volumes:
       - .:/app
     depends_on:
-      - kafka
-      - postgres
+      - api
     environment:
       - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092

@@ -25,7 +25,7 @@ test: ## Run the test suite
 	poetry run pytest
 
 build-image: ## Build the development image
-	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yaml build --no-cache
+	docker compose -f docker-compose.dev.yaml build
 
 run-dev: ## Run all development containers
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yaml up -d
