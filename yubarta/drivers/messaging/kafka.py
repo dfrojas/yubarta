@@ -24,8 +24,7 @@ class KafkaProducer:
                 max_batch_size=settings.KAFKA_MAX_BATCH_SIZE,
                 max_request_size=settings.KAFKA_MAX_BATCH_SIZE * 2,
                 retry_backoff_ms=settings.KAFKA_RETRY_BACKOFF_MS,
-                # retries=settings.KAFKA_RETRIES,
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                value_serializer=lambda v: json.dumps(v).encode(),
             )
             await self.producer.start()
             logger.info("Kafka producer started successfully")

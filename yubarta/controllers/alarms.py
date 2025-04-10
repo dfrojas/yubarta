@@ -1,4 +1,3 @@
-import json
 from dataclasses import asdict
 from typing import Optional
 
@@ -19,6 +18,4 @@ class AlertController:
             await self.storage.add(alert)
 
         if self.messaging:
-            await self.messaging.publish(
-                topic=settings.KAFKA_ALERT_TOPIC, value=json.dumps(asdict(alert)), key=alert.fingerprint
-            )
+            await self.messaging.publish(topic=settings.KAFKA_ALERT_TOPIC, value=asdict(alert), key=alert.fingerprint)

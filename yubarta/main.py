@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
 
     # Cleanup
     await producer.stop()
+    await app.state.db.close()
 
 
 app = FastAPI(lifespan=lifespan)

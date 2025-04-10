@@ -1,8 +1,15 @@
 import asyncio
+import json
+from datetime import datetime
 from typing import Any
 
 from aiokafka import AIOKafkaConsumer
-from contextlib import asynccontextmanager
+
+from yubarta.controllers.alarms import AlertController
+from yubarta.core.models import Alert
+from yubarta.drivers.db.orm import start_mappers
+from yubarta.drivers.db.repository import SqlAlchemyAlarmRepository
+from yubarta.drivers.db.sessions import get_raw_session
 
 
 class Director:
@@ -14,15 +21,21 @@ class Director:
         consumer = AIOKafkaConsumer(
             self.topic,
             bootstrap_servers=self.kafka_broker,
-            group_id="director-group"
+            group_id="director-group",
+            value_deserializer=lambda v: json.loads(v),
         )
         await consumer.start()
         try:
             async for message in consumer:
-                print(message, "message")
-                alarm_data = self.process_message(message.value)
-                if self.should_execute_remediation(alarm_data):
-                    await self.execute_remediation(alarm_data)
+                # TODO: Test performance with batches with a single session.
+                async with get_raw_session() as session:
+                    alert = Alert(**message.value)
+                    alert.received_at = datetime.fromisoformat(alert.received_at)
+                    alert.status_updated_at = datetime.fromisoformat(alert.status_updated_at)
+
+                    alert_repository = SqlAlchemyAlarmRepository(session)
+
+                    await AlertController(storage=alert_repository).process_alert(alert)
         finally:
             await consumer.stop()
 
@@ -39,7 +52,7 @@ class Director:
         pass
 
 
-# Example usage
 if __name__ == "__main__":
+    start_mappers()
     director = Director(kafka_broker="kafka:9092", topic="alerts")
     asyncio.run(director.run())

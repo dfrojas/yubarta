@@ -32,7 +32,7 @@ services:
     # deploy:
     #   mode: replicated
     #   replicas: 3
-    command: python -m yubarta.controllers.director
+    command: watchfiles "python -m yubarta.controllers.director"
     volumes:
       - .:/app
     depends_on:

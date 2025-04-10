@@ -1,14 +1,13 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from yubarta.config import settings
 from yubarta.drivers.db.orm import mapper_registry, start_mappers
 
 
 class Database:
-    def __init__(self, db_url: str = settings.DATABASE_URI):
-        self.engine = create_async_engine(db_url, echo=True, future=True)
-        self.session_factory = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+    def __init__(self, db_uri: str = settings.DATABASE_URI):
+        self.engine = create_async_engine(db_uri, echo=True, future=True)
+        self.session_factory = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def create_database(self):
         """Create all tables defined in the metadata"""

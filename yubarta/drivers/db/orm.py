@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, Date, Integer, String, Table
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Table
 from sqlalchemy.orm import registry
 
 from yubarta.core.models import Alert
@@ -10,11 +10,10 @@ alerts = Table(
     mapper_registry.metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("source", String(255), nullable=False),
-    # Column("fingerprint", String(255), nullable=False, index=True),  # Pending to migration
-    Column("fingerprint", String(255), nullable=True),
+    Column("fingerprint", String(255), nullable=False, index=True),
     Column("severity", String(255), nullable=False),
-    Column("received_at", Date, nullable=False),
-    Column("status_updated_at", Date, nullable=True),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("status_updated_at", DateTime(timezone=True), nullable=True),
     Column("status", String(255), nullable=False),
     Column("labels", JSON),
     Column("raw", JSON),
@@ -22,4 +21,4 @@ alerts = Table(
 
 
 def start_mappers():
-    alerts_mapper = mapper_registry.map_imperatively(Alert, alerts)
+    mapper_registry.map_imperatively(Alert, alerts)

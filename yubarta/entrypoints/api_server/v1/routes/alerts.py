@@ -1,16 +1,13 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from yubarta.common.utils import generate_fingerprint
 from yubarta.controllers.alarms import AlertController
 from yubarta.core.enums import AlertSource, AlertStatus
-from yubarta.core.interfaces import AlarmMessagingInterface
-
-# from yubarta.drivers.messaging.kafka import producer
-from yubarta.drivers.messaging.utils import get_messaging
+from yubarta.drivers.messaging.kafka import producer
 from yubarta.drivers.monitoring.datadog import DatadogHandler
 from yubarta.entrypoints.api_server.v1.schemas import AlertReceiptResponse
 
@@ -18,7 +15,7 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 @router.post("/register/datadog", response_model=AlertReceiptResponse, status_code=HTTPStatus.ACCEPTED)
-async def receive_alert(request: Request, messaging: AlarmMessagingInterface = Depends(get_messaging)):
+async def receive_alert(request: Request):
     try:
         payload = await request.json()
 
@@ -27,7 +24,7 @@ async def receive_alert(request: Request, messaging: AlarmMessagingInterface = D
 
         alert_converted = DatadogHandler(payload, fingerprint, now).process()
 
-        await AlertController(messaging=messaging).process_alert(alert_converted)
+        await AlertController(messaging=producer).process_alert(alert_converted)
 
         return AlertReceiptResponse(
             alert_id=alert_converted.fingerprint,

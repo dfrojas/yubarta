@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +11,7 @@ class AlertIngestionRequest(BaseModel):
     """
 
     provider: Optional[str] = None
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
 
 
 class AlertReceiptResponse(BaseModel):
