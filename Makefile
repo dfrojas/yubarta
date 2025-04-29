@@ -19,10 +19,10 @@ fix-format: ## Run Ruff with automatic fixing (linter and automatic formatter)
 	poetry run ruff format .
 	poetry run ruff check --fix .
 
-.PHONY: test
-test: ## Run the test suite
+.PHONY: run-tests
+run-tests: ## Run the test suite
 	@echo "🧪 ${GREEN}Running tests...${NC} 🧪"
-	docker compose -f docker-compose.dev.yaml run --rm app poetry run pytest
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run pytest
 
 docker-build: ## Build the development image
 	docker compose -f docker-compose.dev.yaml build
