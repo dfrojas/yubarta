@@ -15,10 +15,10 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.12'
-    - name: Install deps with Docker
+    - name: Build Docker image
       run: |
-        docker compose -f docker-compose.dev.yaml build
-    - name: Run tests with dependencies
+        make docker-build
+    - name: Run tests inside the container
       run: |
         cp .env.ci .env
-        docker compose -f docker-compose.dev.yaml run --rm api poetry run pytest
+        make run-tests
