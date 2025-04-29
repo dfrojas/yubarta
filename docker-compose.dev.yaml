@@ -17,6 +17,8 @@ services:
     depends_on:
       - postgres
       - kafka
+    # env_file:
+    #   - .env.ci
     environment:
       - ENV=dev
       - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
@@ -29,9 +31,6 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: yubarta-director
-    # deploy:
-    #   mode: replicated
-    #   replicas: 3
     command: watchfiles "python -m yubarta.controllers.director"
     volumes:
       - .:/app

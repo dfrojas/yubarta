@@ -1,12 +1,14 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from dataclasses import asdict
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from yubarta.config import settings
 from yubarta.controllers.alarms import AlertController
+from yubarta.core.enums import AlertSource, AlertStatus
 from yubarta.core.interfaces import AlarmMessagingInterface
 from yubarta.core.models import Alert
-from yubarta.core.enums import AlertSource, AlertStatus
-from yubarta.config import settings
+
 
 # Sample Alert object
 @pytest.fixture
@@ -21,12 +23,14 @@ def sample_alert():
         payload={"key": "value"},
     )
 
+
 # Mock messaging interface
 @pytest.fixture
 def mock_messaging():
     mock = MagicMock(spec=AlarmMessagingInterface)
-    mock.publish = AsyncMock() # publish is an async method
+    mock.publish = AsyncMock()  # publish is an async method
     return mock
+
 
 @pytest.mark.skip(reason="Skipping test due to flakyness")
 @pytest.mark.asyncio
@@ -40,6 +44,7 @@ async def test_process_alert_sends_to_messaging(mock_messaging, sample_alert):
         value=asdict(sample_alert),
         key=sample_alert.fingerprint,
     )
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip(reason="Skipping test due to flakyness")
@@ -69,4 +74,4 @@ async def test_process_alert_with_storage_and_messaging(sample_alert):
         topic=settings.KAFKA_ALERT_TOPIC,
         value=asdict(sample_alert),
         key=sample_alert.fingerprint,
-    ) 
+    )

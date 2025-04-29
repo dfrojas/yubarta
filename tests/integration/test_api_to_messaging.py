@@ -1,17 +1,19 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from dataclasses import asdict
 
-from yubarta.entrypoints.api_server.v1.router import router
-from yubarta.core.enums import AlertSource, AlertStatus
 from yubarta.config import settings
+from yubarta.core.enums import AlertSource, AlertStatus
+from yubarta.entrypoints.api_server.v1.router import router
+
 
 # Fixture for the FastAPI TestClient
 @pytest.fixture
 def client():
     return TestClient(router)
+
 
 # Sample valid Datadog payload
 @pytest.fixture
@@ -41,7 +43,7 @@ async def test_api_sends_alert_to_messaging(mock_publish, client, datadog_payloa
 
     # Assert arguments passed to publish
     assert call_kwargs["topic"] == settings.KAFKA_ALERT_TOPIC
-    assert call_kwargs["key"] == response_data["alert_id"] # Fingerprint should match alert_id
+    assert call_kwargs["key"] == response_data["alert_id"]  # Fingerprint should match alert_id
 
     # Verify the structure and key content of the published value (alert dict)
     published_value = call_kwargs["value"]
@@ -50,4 +52,4 @@ async def test_api_sends_alert_to_messaging(mock_publish, client, datadog_payloa
     assert published_value["title"] == datadog_payload["title"]
     assert published_value["source"] == AlertSource.DATADOG.value
     assert published_value["status"] == AlertStatus.PENDING.value
-    # Add more assertions on published_value content if needed 
+    # Add more assertions on published_value content if needed

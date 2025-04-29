@@ -1,21 +1,25 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from yubarta.entrypoints.api_server.v1.router import router  # Assuming main app or router is here
-from yubarta.core.models import Alert
 from yubarta.core.enums import AlertSource, AlertStatus
+from yubarta.core.models import Alert
+from yubarta.entrypoints.api_server.v1.router import router  # Assuming main app or router is here
+
 
 # Fixture for the FastAPI TestClient
 @pytest.fixture
 def client():
     return TestClient(router)
 
+
 # Sample valid Datadog payload
 @pytest.fixture
 def datadog_payload():
     return {"title": "Test Alert", "message": "This is a test alert from Datadog."}
+
 
 # Sample Alert object returned by the handler
 @pytest.fixture
@@ -29,6 +33,7 @@ def processed_alert():
         received_at="2023-10-27T10:00:00Z",
         payload={"title": "Test Alert", "message": "This is a test alert from Datadog."},
     )
+
 
 @pytest.mark.skip(reason="Skipping test due to flakyness")
 @patch("yubarta.entrypoints.api_server.v1.routes.alerts.generate_fingerprint", return_value="dd-test-fingerprint")
@@ -58,7 +63,7 @@ def test_receive_alert_success(
     assert response.status_code == status.HTTP_202_ACCEPTED
     assert response.json() == {
         "alert_id": "dd-test-fingerprint",
-        "status": AlertStatus.PENDING.value, # Ensure enum value is used if expected
+        "status": AlertStatus.PENDING.value,  # Ensure enum value is used if expected
     }
 
     # Verify mocks were called correctly
@@ -69,6 +74,7 @@ def test_receive_alert_success(
     # Check AlertController instantiation and process_alert call
     mock_alert_controller_cls.assert_called_once()
     mock_controller_instance.process_alert.assert_called_once_with(processed_alert)
+
 
 @pytest.mark.skip(reason="Skipping test due to flakyness")
 def test_receive_alert_bad_request(client):
@@ -89,7 +95,9 @@ def test_receive_alert_bad_request(client):
 def test_receive_alert_internal_error(client):
     """Test the endpoint returns 500 for unexpected errors."""
     # Simulate an unexpected error during processing
-    with patch("yubarta.entrypoints.api_server.v1.routes.alerts.AlertController", new_callable=AsyncMock) as mock_alert_controller_cls:
+    with patch(
+        "yubarta.entrypoints.api_server.v1.routes.alerts.AlertController", new_callable=AsyncMock
+    ) as mock_alert_controller_cls:
         mock_controller_instance = mock_alert_controller_cls.return_value
         mock_controller_instance.process_alert.side_effect = Exception("Something went wrong")
 
@@ -97,4 +105,4 @@ def test_receive_alert_internal_error(client):
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert "error" in response.json()
-        assert "Unexpected error" in response.json()["error"] 
+        assert "Unexpected error" in response.json()["error"]

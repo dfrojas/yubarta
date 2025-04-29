@@ -1,44 +1,30 @@
-API_URL = "http://localhost:8080"
-
-DIRECTOR_POLLING_INTERVAL = 1.0
-DIRECTOR_BATCH_SIZE = 10
-
-DATABASE_CONFIG = {
-    "ENGINE": "postgresql",
-    "NAME": "yubarta",
-    "USER": "yubarta",
-    "PASSWORD": "password",
-    "HOST": "postgres",
-    "PORT": "5432",
-}
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def build_database_uri(db_config: dict) -> str:
-    """Build a SQLAlchemy connection URL from database configuration dictionary."""
-    engine = db_config["ENGINE"]
+class Settings(BaseSettings):
+    # APP
+    APP_ENV: str = "dev"
 
-    # For async SQLAlchemy, use asyncpg driver
-    if engine == "postgresql":
-        engine = "postgresql+asyncpg"
+    # DB
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
 
-    user = db_config["USER"]
-    password = db_config["PASSWORD"]
-    host = db_config["HOST"]
-    port = db_config["PORT"]
-    name = db_config["NAME"]
+    # Kafka
+    KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
+    KAFKA_ALERT_TOPIC: str = "alerts"
+    KAFKA_CONSUMER_GROUP: str = "alert_processor"
+    KAFKA_MAX_BATCH_SIZE: int = 1000
+    KAFKA_MAX_WAIT_MS: int = 500
+    KAFKA_COMPRESSION_TYPE: str = "gzip"
+    KAFKA_ACKS: str = "all"
+    KAFKA_RETRIES: int = 3
+    KAFKA_RETRY_BACKOFF_MS: int = 100
 
-    return f"{engine}://{user}:{password}@{host}:{port}/{name}"
+    @property
+    def DATABASE_URI(self):
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-
-DATABASE_URI = build_database_uri(DATABASE_CONFIG)
-
-# Kafka Settings
-KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
-KAFKA_ALERT_TOPIC = "alerts"
-KAFKA_CONSUMER_GROUP = "alert_processor"
-KAFKA_MAX_BATCH_SIZE = 1000
-KAFKA_MAX_WAIT_MS = 500
-KAFKA_COMPRESSION_TYPE = "gzip"  # Efficient for JSON payloads
-KAFKA_ACKS = "all"  # Ensures durability
-KAFKA_RETRIES = 3
-KAFKA_RETRY_BACKOFF_MS = 100
+    model_config = SettingsConfigDict(env_file=".env")
