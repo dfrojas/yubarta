@@ -1,12 +1,12 @@
 import asyncio
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, Union
 
 from aiokafka import AIOKafkaConsumer
 
 from yubarta.controllers.alarms import AlertController
-from yubarta.core.models import Alert
+from yubarta.entrypoints.api_server.schemas import AlertRequest
 from yubarta.drivers.db.orm import start_mappers
 from yubarta.drivers.db.repository import SqlAlchemyAlarmRepository
 from yubarta.drivers.db.sessions import get_raw_session
@@ -17,7 +17,7 @@ class Director:
         self.kafka_broker = kafka_broker
         self.topic = topic
 
-    async def run(self):
+    async def run(self) -> None:
         consumer = AIOKafkaConsumer(
             self.topic,
             bootstrap_servers=self.kafka_broker,
@@ -29,25 +29,26 @@ class Director:
             async for message in consumer:
                 # TODO: Test performance with batches with a single session.
                 async with get_raw_session() as session:
-                    alert = Alert(**message.value)
-                    alert.received_at = datetime.fromisoformat(alert.received_at)
-                    alert.status_updated_at = datetime.fromisoformat(alert.status_updated_at)
+                    # Parse the incoming JSON message into a pydantic request model.
+                    alert_req = AlertRequest.model_validate(message.value)
+
+                    received_at = datetime.utcnow()
 
                     alert_repository = SqlAlchemyAlarmRepository(session)
 
-                    await AlertController(storage=alert_repository).process_alert(alert)
+                    await AlertController(storage=alert_repository).process_alert(alert_req, received_at=received_at)
         finally:
             await consumer.stop()
 
-    def process_message(self, message: Any) -> dict:
+    def process_message(self, message: Any) -> Dict[str, Any]:
         # Process the incoming message and return structured alarm data
         return {}
 
-    def should_execute_remediation(self, alarm_data: dict) -> bool:
+    def should_execute_remediation(self, alarm_data: Dict[str, Any]) -> bool:
         # Decision logic to determine if remediation should be executed
         return True
 
-    async def execute_remediation(self, alarm_data: dict):
+    async def execute_remediation(self, alarm_data: Dict[str, Any]) -> None:
         # Logic to execute remediation
         pass
 

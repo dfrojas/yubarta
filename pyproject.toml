@@ -31,6 +31,34 @@ watchfiles = "^1.0.5"
 pytest-asyncio = "^0.26.0"
 pytest-dotenv = "^0.5.2"
 mockafka-py = "^0.1.63"
+mypy = "^1.15.0"
+types-paramiko = "^3.5.0"
+types-pyyaml = "^6.0.12"
+types-requests = "^2.32.0"
+
+[tool.mypy]
+strict = true
+disallow_any_unimported = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disable_error_code = "arg-type, no-untyped-call, import-untyped, union-attr"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+# Ignore for now since still is in WIP
+module = "yubarta.entrypoints.cli.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Ignore for now since still is in WIP
+module = "yubarta.controllers.coordinator.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "aiokafka.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120

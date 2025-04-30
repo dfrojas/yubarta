@@ -20,5 +20,5 @@ alerts = Table(
 )
 
 
-def start_mappers():
+def start_mappers() -> None:
     mapper_registry.map_imperatively(Alert, alerts)

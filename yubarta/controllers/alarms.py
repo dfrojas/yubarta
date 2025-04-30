@@ -17,7 +17,6 @@ class AlertController:
     async def process_alert(self, alert: AlertRequest, received_at: datetime) -> Alert:
         alert_domain = alert.to_domain(received_at)
         if self.storage:
-            # TODO: Pass a schema instead of the raw domain?
             await self.storage.add(alert_domain)
             return alert_domain
         elif self.messaging:

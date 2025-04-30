@@ -1,5 +1,7 @@
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any, Optional
 
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
@@ -10,13 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 class KafkaAdmin:
-    def __init__(self, bootstrap_servers: str = settings.KAFKA_BOOTSTRAP_SERVERS):
+    """Utility class for Kafka administrative tasks (topic management, etc.)."""
+
+    def __init__(self, bootstrap_servers: str = settings.KAFKA_BOOTSTRAP_SERVERS) -> None:
         self.bootstrap_servers = bootstrap_servers
-        self.admin_client = None
+        # The concrete type is ``AIOKafkaAdminClient`` but we mark it as ``Any``
+        # because the library is untyped.
+        self.admin_client: Optional[Any] = None
 
     @asynccontextmanager
-    async def get_admin_client(self):
-        """Get an admin client for Kafka operations"""
+    async def get_admin_client(self) -> AsyncGenerator[Any, None]:
+        """Context-manager that yields an *aiokafka* admin client."""
+
         admin_client = AIOKafkaAdminClient(bootstrap_servers=self.bootstrap_servers)
         try:
             await admin_client.start()
@@ -24,7 +31,7 @@ class KafkaAdmin:
         finally:
             await admin_client.close()
 
-    async def create_topics(self):
+    async def create_topics(self) -> None:
         """Create required Kafka topics if they don't exist"""
         async with self.get_admin_client() as admin_client:
             try:
@@ -47,8 +54,9 @@ class KafkaAdmin:
                     raise
 
 
-async def init_kafka(bootstrap_servers: str = settings.KAFKA_BOOTSTRAP_SERVERS):
-    """Initialize Kafka setup and return a KafkaAdmin instance"""
+async def init_kafka(bootstrap_servers: str = settings.KAFKA_BOOTSTRAP_SERVERS) -> KafkaAdmin:
+    """Initialize Kafka infrastructure (producer + topics) and return an admin helper."""
+
     kafka_admin = KafkaAdmin(bootstrap_servers)
     await producer.start()
     await kafka_admin.create_topics()

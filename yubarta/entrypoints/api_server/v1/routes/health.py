@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Response
+from typing import Dict
 
 router = APIRouter(prefix="/z", tags=["health"])
 
 
 @router.get("/whale")
-def home():
+def home() -> Response:
     whale_ascii = r"""
              .
             ":"
@@ -21,5 +22,5 @@ def home():
 
 
 @router.get("/healthz")
-async def health_check():
+async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}

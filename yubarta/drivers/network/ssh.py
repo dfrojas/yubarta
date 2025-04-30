@@ -1,3 +1,5 @@
+from typing import Optional
+
 import paramiko
 
 
@@ -15,8 +17,9 @@ class SSHClient:
         self.ssh_key_path = ssh_key_path
         self.port = port
         self.timeout = timeout
+        self.client: Optional[paramiko.client.SSHClient] = None
 
-    def connect(self):
+    def connect(self) -> None:
         self.client = paramiko.client.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         private_key = paramiko.RSAKey.from_private_key_file(str(self.ssh_key_path))
@@ -29,8 +32,11 @@ class SSHClient:
             timeout=self.timeout,
         )
 
-    def exec_command(self, command: str) -> tuple[str, str, str]:
+    def exec_command(self, command: str) -> tuple[int, str, str]:
         try:
+            if self.client is None:
+                raise RuntimeError("SSH client not connected")
+
             _stdin, _stdout, _stderr = self.client.exec_command(command)
             exit_code = _stdin.channel.recv_exit_status()
             return (
@@ -43,7 +49,7 @@ class SSHClient:
         # finally:
         #     self.close()
 
-    def close(self):
+    def close(self) -> None:
         if self.client:
             self.client.close()
             self.client = None

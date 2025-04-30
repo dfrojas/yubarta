@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from datetime import datetime
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 @router.post("/register/datadog", response_model=AlertResponse, status_code=HTTPStatus.ACCEPTED)
-async def receive_alert(alert: AlertRequest):
+async def receive_alert(alert: AlertRequest) -> AlertResponse | JSONResponse:
     try:
         # now = datetime.now(timezone.utc).isoformat()
         # fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
@@ -23,12 +24,10 @@ async def receive_alert(alert: AlertRequest):
         #     status=AlertStatus.PENDING,
         # )
 
-        await AlertController(messaging=producer).process_alert(alert)
+        received_at = datetime.utcnow()
+        alert_domain = await AlertController(messaging=producer).process_alert(alert, received_at=received_at)
 
-        # return AlertResponse(
-        #     alert_id=alert_converted.fingerprint,
-        #     status=AlertStatus.PENDING,
-        # )
+        return AlertResponse(alert_id=alert_domain.fingerprint, status=str(alert_domain.status))
 
     except ValueError as e:
         return JSONResponse(

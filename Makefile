@@ -24,6 +24,11 @@ run-tests: ## Run the test suite
 	@echo "🧪 ${GREEN}Running tests...${NC} 🧪"
 	docker compose -f docker-compose.dev.yaml run --rm api poetry run pytest
 
+.PHONY: run-mypy
+run-mypy: ## Run the mypy type checker
+	@echo "🐋 ${GREEN}Running mypy...${NC} 🐋"
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run mypy .
+
 docker-build: ## Build the development image
 	docker compose -f docker-compose.dev.yaml build
 

@@ -22,3 +22,6 @@ jobs:
       run: |
         cp .env.ci .env
         make run-tests
+    - name: Run mypy
+      run: |
+        make run-mypy

@@ -5,6 +5,7 @@ This module is intended to test logic but not external dependencies.
 """
 
 from mockafka.aiokafka import FakeAIOKafkaProducer
+from typing import Any
 
 
 class FakeDbRepository:
@@ -33,7 +34,7 @@ class FakeKafkaRepository:
             await self.producer.stop()
             self.started = False
 
-    async def publish(self, topic, value, key):
+    async def publish(self, *, topic: str, value: Any, key: str | None = None):
         if not self.started:
             await self.start()
 
