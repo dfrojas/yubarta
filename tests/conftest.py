@@ -2,11 +2,15 @@ import asyncio
 
 import pytest
 
-from tests.utils import TestDatabase
+from tests.utils.real_database import TestDatabase
 from yubarta.config import settings
 from yubarta.drivers.db.orm import start_mappers
 from yubarta.drivers.db.sessions import get_raw_session
 from yubarta.main import app
+
+pytest_plugins = [
+    "tests.fixtures.alerts",
+]
 
 test_db = TestDatabase()
 

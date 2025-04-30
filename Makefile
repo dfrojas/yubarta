@@ -30,6 +30,9 @@ docker-build: ## Build the development image
 run-dev: ## Run all development containers
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yaml up -d
 
+update-deps: ## Update the dependencies
+	docker compose -f docker-compose.dev.yaml run --rm api poetry update
+
 generate-lock:  ## Regenerate the lock file and copy it from the container to the local environment.
 	@echo "🚧 Building Docker image..."
 	@docker build -t $(IMAGE_NAME_LOCK_BUILDER) .

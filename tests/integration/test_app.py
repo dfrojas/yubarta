@@ -1,6 +1,9 @@
+import pytest
+
 from yubarta.config import settings
 
 
+@pytest.mark.integration
 def test_environment():
     assert settings.APP_ENV == "test"
     assert settings.DB_USER == "yubarta"

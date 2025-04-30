@@ -51,6 +51,7 @@ class KafkaProducer:
             key_bytes = key.encode("utf-8") if key else None
             await self.producer.send_and_wait(topic, value, key=key_bytes)
             logger.debug(f"Message sent to topic {topic}")
+            await self.producer.stop()
         except Exception as e:
             logger.error(f"Failed to send message to Kafka: {str(e)}")
             raise

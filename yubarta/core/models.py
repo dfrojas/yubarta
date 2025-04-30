@@ -1,15 +1,18 @@
-from dataclasses import dataclass
+import hashlib
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+
+from yubarta.core.enums import AlertSeverity, AlertSource, AlertStatus
 
 
 @dataclass
 class Alert:
-    severity: str
-    labels: dict
-    status: str
-    source: str
-    raw: dict
+    severity: AlertSeverity
+    status: AlertStatus
+    source: AlertSource
     received_at: datetime
-    fingerprint: Optional[str] = None
-    status_updated_at: Optional[datetime] = None
+    fingerprint: str = field(init=False)
+
+    def __post_init__(self):
+        raw = f"{self.source}-{self.severity}-{self.received_at.isoformat()}"
+        self.fingerprint = hashlib.sha256(raw.encode()).hexdigest()

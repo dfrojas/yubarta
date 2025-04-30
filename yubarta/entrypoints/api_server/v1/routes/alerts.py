@@ -1,35 +1,34 @@
-from datetime import datetime, timezone
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from yubarta.common.utils import generate_fingerprint
 from yubarta.controllers.alarms import AlertController
-from yubarta.core.enums import AlertSource, AlertStatus
 from yubarta.drivers.messaging.kafka import producer
-from yubarta.drivers.monitoring.datadog import DatadogHandler
-from yubarta.entrypoints.api_server.v1.schemas import AlertReceiptResponse
+from yubarta.entrypoints.api_server.schemas import AlertRequest, AlertResponse
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
-@router.post("/register/datadog", response_model=AlertReceiptResponse, status_code=HTTPStatus.ACCEPTED)
-async def receive_alert(request: Request):
+@router.post("/register/datadog", response_model=AlertResponse, status_code=HTTPStatus.ACCEPTED)
+async def receive_alert(alert: AlertRequest):
     try:
-        payload = await request.json()
+        # now = datetime.now(timezone.utc).isoformat()
+        # fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
+        # alert_converted = AlertKafkaMessage(
+        #     id=fingerprint,
+        #     source=AlertSource.DATADOG,
+        #     severity=payload["alert_type"],
+        #     labels=payload["tags"],
+        #     status=AlertStatus.PENDING,
+        # )
 
-        now = datetime.now(timezone.utc).isoformat()
-        fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
+        await AlertController(messaging=producer).process_alert(alert)
 
-        alert_converted = DatadogHandler(payload, fingerprint, now).process()
-
-        await AlertController(messaging=producer).process_alert(alert_converted)
-
-        return AlertReceiptResponse(
-            alert_id=alert_converted.fingerprint,
-            status=AlertStatus.PENDING,
-        )
+        # return AlertResponse(
+        #     alert_id=alert_converted.fingerprint,
+        #     status=AlertStatus.PENDING,
+        # )
 
     except ValueError as e:
         return JSONResponse(
