@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Any
+from typing import Any, Protocol
 
 from yubarta.core.models import Alert
 

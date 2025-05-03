@@ -1,10 +1,10 @@
 from sqlalchemy import select
-from typing import List
-
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from yubarta.core.models import Alert
 
 # T = TypeVar('T')
+
 
 class SqlAlchemyAlarmRepository:
     """Repository implementation backed by an *already created* ``AsyncSession``.
@@ -31,7 +31,7 @@ class SqlAlchemyAlarmRepository:
             await self._session.rollback()
             raise e
 
-    async def get_all(self) -> List[Alert]:
+    async def get_all(self) -> list[Alert]:
         query = select(Alert)
         result = await self._session.execute(query)
         return list(result.scalars().all())

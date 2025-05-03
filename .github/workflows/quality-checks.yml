@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  quality-checks:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -25,3 +25,6 @@ jobs:
     - name: Run mypy
       run: |
         make run-mypy
+    - name: Run lint
+      run: |
+        make check-format

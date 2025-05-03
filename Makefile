@@ -11,13 +11,13 @@ help:
 .PHONY: check-format
 check-format: ## Run Ruff without automatic fixing.
 	@echo "🐋 ${GREEN}Checking format code...${NC} 🐋"
-	poetry run ruff check .
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run ruff check .
 
 .PHONY: fix-format
 fix-format: ## Run Ruff with automatic fixing (linter and automatic formatter)
 	@echo "🐋 ${GREEN}Fixing format code...${NC} 🐋"
-	poetry run ruff format .
-	poetry run ruff check --fix .
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run ruff format .
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run ruff check --fix .
 
 .PHONY: run-tests
 run-tests: ## Run the test suite

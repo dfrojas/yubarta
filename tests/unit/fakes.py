@@ -4,8 +4,9 @@ Configuration to spin up an in-memory database for __unit__ testing purposes.
 This module is intended to test logic but not external dependencies.
 """
 
-from mockafka.aiokafka import FakeAIOKafkaProducer
 from typing import Any
+
+from mockafka.aiokafka import FakeAIOKafkaProducer
 
 
 class FakeDbRepository:
