@@ -11,3 +11,4 @@ def test_environment():
     assert settings.DB_HOST == "postgres"
     assert settings.DB_PORT == 5432
     assert settings.DB_NAME == "yubarta_test"
+    assert settings.KAFKA_ALERT_TOPIC == "mocked_alerts_topic"

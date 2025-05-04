@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -8,21 +8,32 @@ from yubarta.core.models import Alert
 
 
 class AlertRequest(BaseModel):
-    """
-    This schema is optional since we're identifying the provider from the raw payload.
-    It could be used for documentation purposes or for APIs where the source is known.
-    """
-
+    external_id: str
     source: AlertSource
-    severity: AlertSeverity
+    title: str
+    message: str
     status: AlertStatus
+    severity: AlertSeverity
+    scope: Optional[str] = None
+    tags: list[str] = []
+    occurred_at: datetime
+    enriched: Optional[bool] = False
+    raw_payload: Optional[dict[str, Any]] = {}
 
     def to_domain(self, received_at: datetime) -> Alert:
         return Alert(
+            external_id=self.external_id,
             source=self.source,
-            severity=self.severity,
+            title=self.title,
+            message=self.message,
             status=self.status,
+            severity=self.severity,
+            scope=self.scope,
+            tags=self.tags,
+            occurred_at=self.occurred_at,
             received_at=received_at,
+            enriched=bool(self.enriched),
+            raw_payload=self.raw_payload or {},
         )
 
 
@@ -37,25 +48,57 @@ class AlertResponse(BaseModel):
     received_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AlertKafkaMessage(BaseModel):
-    source: str
-    severity: str
-    status: str
+    external_id: str
+    source: AlertSource
+    title: str
+    message: str
+    status: AlertStatus
+    severity: AlertSeverity
+    scope: Optional[str] = None
+    tags: list[str] = []
+    occurred_at: datetime
+    enriched: bool
+    raw_payload: Optional[dict[str, Any]] = {}
+    fingerprint: str
     received_at: datetime
-    fingerprint: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
     @classmethod
     def from_domain(cls, alert: "Alert") -> "AlertKafkaMessage":
         return cls(
+            external_id=alert.external_id,
             source=alert.source,
-            severity=alert.severity,
+            title=alert.title,
+            message=alert.message,
             status=alert.status,
+            severity=alert.severity,
+            scope=alert.scope,
+            tags=alert.tags,
+            occurred_at=alert.occurred_at,
             received_at=alert.received_at,
             fingerprint=alert.fingerprint,
+            enriched=alert.enriched,
+            raw_payload=alert.raw_payload,
+        )
+
+    def to_domain(self) -> Alert:
+        return Alert(
+            external_id=self.external_id,
+            source=self.source,
+            title=self.title,
+            message=self.message,
+            status=self.status,
+            severity=self.severity,
+            scope=self.scope,
+            tags=self.tags,
+            occurred_at=self.occurred_at,
+            received_at=self.received_at,
+            enriched=bool(self.enriched),
+            raw_payload=self.raw_payload or {},
         )

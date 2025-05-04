@@ -1,6 +1,5 @@
 import asyncio
 import json
-from datetime import datetime
 from typing import Any
 
 from aiokafka import AIOKafkaConsumer
@@ -9,7 +8,7 @@ from yubarta.controllers.alarms import AlertController
 from yubarta.drivers.db.orm import start_mappers
 from yubarta.drivers.db.repository import SqlAlchemyAlarmRepository
 from yubarta.drivers.db.sessions import get_raw_session
-from yubarta.entrypoints.api_server.schemas import AlertRequest
+from yubarta.entrypoints.api_server.schemas import AlertKafkaMessage
 
 
 class Director:
@@ -18,25 +17,24 @@ class Director:
         self.topic = topic
 
     async def run(self) -> None:
+        print("Starting director")
         consumer = AIOKafkaConsumer(
             self.topic,
             bootstrap_servers=self.kafka_broker,
             group_id="director-group",
             value_deserializer=lambda v: json.loads(v),
         )
+
         await consumer.start()
         try:
             async for message in consumer:
                 # TODO: Test performance with batches with a single session.
                 async with get_raw_session() as session:
                     # Parse the incoming JSON message into a pydantic request model.
-                    alert_req = AlertRequest.model_validate(message.value)
-
-                    received_at = datetime.utcnow()
-
+                    alert_in_kafka = AlertKafkaMessage.model_validate_json(message.value)
+                    alert = alert_in_kafka.to_domain()
                     alert_repository = SqlAlchemyAlarmRepository(session)
-
-                    await AlertController(storage=alert_repository).process_alert(alert_req, received_at=received_at)
+                    await AlertController(storage=alert_repository).process_alert(alert)
         finally:
             await consumer.stop()
 

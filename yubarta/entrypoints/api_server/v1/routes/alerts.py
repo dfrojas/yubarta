@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 
 from fastapi import APIRouter
@@ -12,20 +12,11 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 @router.post("/register/datadog", response_model=AlertResponse, status_code=HTTPStatus.ACCEPTED)
-async def receive_alert(alert: AlertRequest) -> AlertResponse | JSONResponse:
+async def receive_alert(alert_request: AlertRequest) -> AlertResponse | JSONResponse:
     try:
-        # now = datetime.now(timezone.utc).isoformat()
-        # fingerprint = generate_fingerprint(AlertSource.DATADOG, now)
-        # alert_converted = AlertKafkaMessage(
-        #     id=fingerprint,
-        #     source=AlertSource.DATADOG,
-        #     severity=payload["alert_type"],
-        #     labels=payload["tags"],
-        #     status=AlertStatus.PENDING,
-        # )
-
-        received_at = datetime.utcnow()
-        alert_domain = await AlertController(messaging=producer).process_alert(alert, received_at=received_at)
+        now = datetime.now(timezone.utc)
+        alert = alert_request.to_domain(now)
+        alert_domain = await AlertController(messaging=producer).process_alert(alert)
 
         return AlertResponse(alert_id=alert_domain.fingerprint, status=str(alert_domain.status))
 
