@@ -1,0 +1,45 @@
+graph TB
+  %% Node definitions
+  CLI["CLI rules config"]
+  APIServer["API Server"]
+  Reactors["Reactors"]
+  Scanners["Scanners"]
+  AlertController["Alert Controller"]
+  Kafka["Kafka"]
+  Director["Yubarta Director"]
+  Worker["Worker"]
+  Remediation["Remediation"]
+  Host["Failing Host"]
+
+  %% Node styling
+  classDef component fill:#FFA500,stroke:#333,stroke-width:2px,color:#fff,rx:10,ry:10,font-weight:bold;
+  class APIServer component;
+
+  classDef host fill:red,stroke:#333,stroke-width:2px,color:#000;
+  class Host host;
+
+  %% Arrows
+  linkStyle default stroke:#00BFFF,stroke-width:3px;
+
+  %% Layout
+  CLI --> APIServer
+
+  subgraph Alarms
+    Reactors
+    Scanners    
+  end
+  
+  Host <---> Alarms
+  Alarms --> APIServer
+  
+  APIServer --> AlertController
+  AlertController --> Kafka
+  
+  Kafka --> Director
+  Worker <--> Director
+  Worker --> Remediation
+
+  Remediation --> Host
+
+  
+
