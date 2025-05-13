@@ -17,7 +17,6 @@ class Director:
         self.topic = topic
 
     async def run(self) -> None:
-        print("Starting director")
         consumer = AIOKafkaConsumer(
             self.topic,
             bootstrap_servers=self.kafka_broker,

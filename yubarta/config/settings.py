@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
     KAFKA_ALERT_TOPIC: str = "alerts"
     KAFKA_CONSUMER_GROUP: str = "alert_processor"
-    KAFKA_MAX_BATCH_SIZE: int = 1000
+    KAFKA_MAX_BATCH_SIZE: int = 1048576
     KAFKA_MAX_WAIT_MS: int = 500
     KAFKA_COMPRESSION_TYPE: str = "gzip"
     KAFKA_ACKS: str = "all"

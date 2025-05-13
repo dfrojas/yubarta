@@ -18,6 +18,14 @@ check-format: ## Run Ruff without automatic fixing.
 	@echo "🐋 ${GREEN}Checking format code...${NC} 🐋"
 	docker compose -f docker-compose.dev.yaml run --rm api poetry run ruff check .
 
+.PHONY: see-logs
+see-logs: ## See the logs of the development containers (use CONTAINER=service_name to see logs for a specific container)
+	@if [ -z "$(CONTAINER)" ]; then \
+		docker compose -f docker-compose.dev.yaml logs -f; \
+	else \
+		docker compose -f docker-compose.dev.yaml logs -f $(CONTAINER); \
+	fi
+
 .PHONY: fix-format
 fix-format: ## Run Ruff with automatic fixing (linter and automatic formatter)
 	@echo "🐋 ${GREEN}Fixing format code...${NC} 🐋"

@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Table
+from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Table, Text
 from sqlalchemy.orm import registry
 
 from yubarta.core.models import Alert
@@ -12,7 +12,7 @@ alerts = Table(
     Column("external_id", String(255), nullable=False),
     Column("source", String(255), nullable=False),
     Column("title", String(255), nullable=False),
-    Column("message", String(1023), nullable=False),
+    Column("message", Text, nullable=False),
     Column("status", String(255), nullable=False),
     Column("severity", String(255), nullable=False),
     Column("scope", String(255), nullable=True),

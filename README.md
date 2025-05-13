@@ -27,6 +27,10 @@ It’s designed for modern infrastructure teams that need automated response to 
 
 Yubarta doesn't just observe — it acts. Use it to move beyond dashboards and into self-healing systems.
 
+### Devlogs:
+
+[https://dfrojas.com/software/yubarta-de vlog-001.html](https://dfrojas.com/software/yubarta-devlog-001.html){:target="_blank"}
+
 ### What It Does
 
 Yubarta operates on two core pillars:
