@@ -49,3 +49,39 @@ class Alert:
             ]
             raw_key = "|".join(key_parts)
             self.fingerprint = hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+# @dataclass
+# class Remediation:
+#     """
+#     Domain model for remediation configurations stored in the system.
+#     """
+#     name: str
+#     description: Optional[str] = None
+#     version: str = "1.0"
+#     created_at: datetime
+#     updated_at: datetime
+#     tags: list[str] = field(default_factory=list)
+#     approval_required: bool = False
+#     auto_approve_if_ai_generated: bool = False
+
+#     # JSON blob fields to store complex configuration parts
+#     match_details: dict[str, Any] = field(default_factory=dict)
+#     targets_details: dict[str, Any] = field(default_factory=dict)
+#     connection_details: dict[str, Any] = field(default_factory=dict)
+#     execute_details: dict[str, Any] = field(default_factory=dict)
+#     success_criteria_details: dict[str, Any] = field(default_factory=dict)
+#     ai_details: dict[str, Any] = field(default_factory=dict)
+#     telemetry_details: dict[str, Any] = field(default_factory=dict)
+#     policy_details: dict[str, Any] = field(default_factory=dict)
+
+#     def __post_init__(self) -> None:
+#         # Ensure timestamps are timezone-aware (UTC) if they are naive
+#         # TODO: Remember to add test for this case.
+#         if self.created_at and self.created_at.tzinfo is None:
+#             self.created_at = self.created_at.replace(tzinfo=datetime.timezone.utc)
+#         if self.updated_at and self.updated_at.tzinfo is None:
+#             self.updated_at = self.updated_at.replace(tzinfo=datetime.timezone.utc)
+
+#     def update_timestamp(self) -> None:
+#         self.updated_at = datetime.now(datetime.timezone.utc)
