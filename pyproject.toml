@@ -22,6 +22,7 @@ asyncpg = "^0.28.0"
 psycopg2-binary = "^2.9.9"
 aiokafka = "^0.11.0"  # Downgraded to 0.11 while mockafka-py supports aiokafka 0.12
 pydantic-settings = "^2.9.1"
+redis = "^6.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

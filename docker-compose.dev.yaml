@@ -1,10 +1,9 @@
-version: "3.9"
-
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
+      target: python-api
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: yubarta-api
@@ -19,15 +18,18 @@ services:
       - kafka
     env_file:
       - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
 
   director:
     build:
       context: .
       dockerfile: Dockerfile
+      target: rust-director
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: yubarta-director
-    command: watchfiles "python -m yubarta.controllers.director"
     volumes:
       - .:/app
     depends_on:
@@ -81,5 +83,15 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  redis:
+    image: redis:7-alpine
+    container_name: yubarta-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
 volumes:
   pgdata:
+  redis_data:

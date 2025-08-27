@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.12-slim
+# Python stage for API service
+FROM python:3.12-slim as python-api
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -35,3 +36,31 @@ RUN chmod +x /app/bin/wait-for-it.sh
 # that requires a start up command. We need to create a target in the Make file to start
 # the orchestrator and worker and this target has to be invoked here.
 # CMD ["uvicorn", "yubarta.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# Rust stage for director service
+FROM rust:1.75-slim as rust-director
+
+WORKDIR /app
+
+# Install system dependencies for rdkafka
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    pkg-config \
+    libssl-dev \
+    librdkafka-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Rust project files
+COPY yubarta/director/Cargo.toml yubarta/director/Cargo.lock* ./
+COPY yubarta/director/src ./src
+
+# Build the Rust application
+RUN cargo build --release
+
+# Copy the built binary to a location in PATH
+RUN cp target/release/yubarta-director /usr/local/bin/
+
+# Set the default command for Rust container
+CMD ["yubarta-director"]
