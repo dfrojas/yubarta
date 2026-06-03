@@ -1,0 +1,18 @@
+rules:
+  - name: "Low Memory Usage"
+    metric: "memory.usage.percentage"
+    threshold:
+      type: "absolute" # Error: missing the required 'value' field
+    severity: "WARNING"
+    remediation:
+      script: "/scripts/remediations/noop.sh"
+
+  - name: "Increased Consumer Lag"
+    metric: "kafka.consumer.lag"
+    threshold:
+      type: "dynamic_growth"
+      factor: 3
+    severity: "CRITICAL"
+    remediation:
+      script: "/scripts/remediations/scale_consumer.sh"
+      args: "consumer-group-a" # Error: 'args' must be a list, not a string

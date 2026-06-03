@@ -3,7 +3,6 @@ from typing import Type, TypeVar
 import yaml
 from pydantic import ValidationError
 
-# Use a relative import to access models from the same package/directory
 from .models import FullConfig
 
 # Generic TypeVar for the Pydantic model

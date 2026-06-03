@@ -1,7 +1,7 @@
 from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Table, Text
 from sqlalchemy.orm import registry
 
-from yubarta.core.models import Alert
+from yubarta.models.alerts import Alert
 
 mapper_registry = registry()
 

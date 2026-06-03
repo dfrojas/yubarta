@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # Kafka
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
     KAFKA_ALERT_TOPIC: str = "alerts"
+    KAFKA_INDEXER_TOPIC: str = "indexer"
     KAFKA_CONSUMER_GROUP: str = "alert_processor"
     KAFKA_MAX_BATCH_SIZE: int = 1048576
     KAFKA_MAX_WAIT_MS: int = 500

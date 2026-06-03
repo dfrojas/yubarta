@@ -23,3 +23,9 @@ def home() -> Response:
 @router.get("/healthz")
 async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
+
+
+
+@router.get("/readyz")
+async def ready_check() -> dict[str, str]:
+    pass

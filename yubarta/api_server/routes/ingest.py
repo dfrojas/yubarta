@@ -12,6 +12,7 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 
 BATCH_THRESHOLD = 3
+WINDOW_SEC = 60
 
 @router.post("/confluent", status_code=HTTPStatus.ACCEPTED)
 async def receive_confluent_alert():
@@ -36,20 +37,18 @@ async def receive_confluent_alert():
 
     alert = Alert(**normalized_mocked)
 
-    # TODO: Publicar en Indexer topic
+    is_new = await idempotency_check(event_id=alert.event_id)
+    if not is_new:
+        return JSONResponse(
+            status_code=HTTPStatus.ACCEPTED,
+            content={"message": "duplicate_event_ignored", "event_id": alert.event_id}
+        )
 
-    # is_new = await idempotency_check(event_id=alert.event_id)
-    # if not is_new:
-    #     return JSONResponse(
-    #         status_code=HTTPStatus.ACCEPTED,
-    #         content={"message": "duplicate_event_ignored", "event_id": alert.event_id}
-    #     )
+    batch_count = await bump_batch_alarms(alert.fingerprint, WINDOW_SEC=60)
 
-    batch_count = await bump_batch_alarms(alert.fingerprint, window_sec=60)
+    eligible_for_diagnose = (batch_count >= BATCH_THRESHOLD)
 
-    eligible = (batch_count >= BATCH_THRESHOLD)
-
-    if eligible:
+    if eligible_for_diagnose:
         await producer.publish(
             topic="yubarta.alerts", value=alert.model_dump(), key=alert.event_id
         )
@@ -60,6 +59,6 @@ async def receive_confluent_alert():
             "message": "Alert received",
             "event_id": alert.event_id,
             "batch_count": batch_count,
-            "eligible_for_director": eligible
+            "eligible_for_director": eligible_for_diagnose
         }
     )

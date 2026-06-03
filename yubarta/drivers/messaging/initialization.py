@@ -41,11 +41,17 @@ class KafkaAdmin:
                         name=settings.KAFKA_ALERT_TOPIC,
                         num_partitions=3,  # Start with 3 partitions for parallelism
                         replication_factor=1,  # Single replica for dev, increase for prod
-                    )
+                    ),
+                    # NewTopic(
+                    #     name=settings.KAFKA_INDEXER_TOPIC,
+                    #     num_partitions=3,  # Start with 3 partitions for parallelism
+                    #     replication_factor=1,  # Single replica for dev, increase for prod
+                    # )
                 ]
 
                 await admin_client.create_topics(topics)
                 logger.info(f"Successfully created topic: {settings.KAFKA_ALERT_TOPIC}")
+                logger.info(f"Successfully created topic: {settings.KAFKA_INDEXER_TOPIC}")
             except Exception as e:
                 if "already exists" in str(e):
                     logger.info(f"Topic {settings.KAFKA_ALERT_TOPIC} already exists")

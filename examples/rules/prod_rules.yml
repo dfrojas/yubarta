@@ -1,0 +1,19 @@
+rules:
+  - name: "High CPU Usage"
+    metric: "cpu.usage.percentage"
+    threshold:
+      type: "absolute"
+      value: 90.5
+    severity: "CRITICAL"
+    remediation:
+      script: "/scripts/remediations/restart_service.sh"
+      args: ["high-cpu-app"]
+
+  - name: "Unexpected Log Growth"
+    metric: "log.volume.bytes"
+    threshold:
+      type: "dynamic_growth"
+      factor: 2.5
+    severity: "WARNING"
+    remediation:
+      script: "/scripts/remediations/rotate_logs.sh"
