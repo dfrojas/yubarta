@@ -1,0 +1,28 @@
+schema: spec-driven
+
+context: |
+  Self-hosted auto-remediation framework (Python, Pydantic AI, LiteLLM, MCP, Postgres, SOPS+age).
+  Learning project: applied AI (RAG, prompt caching, agent design) + distributed systems (queues, idempotent workers, stateful processes).
+  Core safety: AI diagnoses and selects; deterministic code executes; humans gate destructive actions; LLM never in detection path.
+  TBDs: queue layer, RAG store, agent observability approach.
+  Full spec: docs/yubarta-spec.md
+
+rules:
+  proposal:
+    - State the target capability from the capabilities list (signal-ingestion, proactive-scanner, etc.) clearly in the title or opening line.
+    - Include a "Non-goals" section for any capability that borders another.
+    - Call out which TODOs from the spec are being resolved, deferred, or left open.
+    - Flag any deviation from the core safety principle (LLM never in detection path; agent never runs unregistered actions; credentials never inlined).
+  design:
+    - Specify the deterministic vs LLM boundary explicitly for any component that touches both.
+    - State where state is persisted and what guarantees crash-safety.
+    - For remediations, confirm idempotency and privilege scope.
+    - For ChatOps additions, classify each operation as deterministic-read, deterministic-action, or grounded-reasoning.
+  specs:
+    - Spec the interface; keep implementation thin for learning-target capabilities (diagnosis-agent, agent-observability, evaluation-harness, RAG store).
+  tasks:
+    - Break tasks into units completable in one sitting (≤ ~2 hours).
+    - Each task must have a clear, testable done condition.
+    - Infra/plumbing tasks (DB schema, SSH wiring) should be separate from agent/LLM tasks.
+    - Tasks that touch secrets or credentials must reference the SOPS + age resolution pattern explicitly.
+    - Emit a learning note in docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries.
