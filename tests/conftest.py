@@ -4,13 +4,9 @@ import pytest
 
 from tests.utils.real_database import TestDatabase
 from yubarta.config import settings
-from yubarta.drivers.db.orm import start_mappers
-from yubarta.drivers.db.sessions import get_raw_session
+from yubarta.infra.db.orm import start_mappers
+from yubarta.infra.db.sessions import get_raw_session
 from yubarta.main import app
-
-pytest_plugins = [
-    "tests.fixtures.alerts",
-]
 
 test_db = TestDatabase()
 
@@ -31,34 +27,14 @@ def event_loop():
     yield loop
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 async def db():
-    """Create and drop test database for each test function"""
+    """Real database — opt-in for integration tests only."""
     await test_db.setup()
     yield
     await test_db.drop_test_database()
 
 
-@pytest.fixture(autouse=True)
-def override_db():
+@pytest.fixture()
+def override_db(db):
     app.dependency_overrides[get_raw_session] = test_db.override_get_db()
-
-
-# @pytest.fixture()
-# async def db_session():
-#     async with test_db.SessionLocal() as session:
-#         yield session
-#         await session.rollback()
-#         await session.close()
-
-# @pytest.fixture()
-# async def client(db_session):
-#     def override_get_db():
-#         return db_session
-
-#     app.dependency_overrides[get_raw_session] = override_get_db
-
-#     async with AsyncClient(app=app, base_url="http://test") as ac:
-#         yield ac
-
-#     app.dependency_overrides.clear()

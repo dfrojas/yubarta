@@ -6,7 +6,7 @@ import asyncpg
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from yubarta.config import settings
-from yubarta.drivers.db.orm import mapper_registry
+from yubarta.infra.db.orm import mapper_registry
 
 
 class TestDatabase:
