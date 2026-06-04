@@ -2,6 +2,8 @@
 
 Autonomous remediation agent for self-hosted infrastructure. Deterministic detection feeds an LLM that diagnoses an incident, picks a remediation from a registered MCP tool set, and executes it under audited, least-privilege control. Reactive (alerts) and proactive (periodic scans).
 
+CRITICAL: DO NOT delegate tasks to subagents. Perform all work, file reading, and coding directly on the main thread.
+
 ## Stack
 
 Python + Pydantic AI (agent), LiteLLM (sole LLM proxy), MCP runtime (remediations as tools), Postgres (incident store), SOPS + age (secrets), Telegram/Slack (ChatOps). Queue and vector store TBD per spec.
