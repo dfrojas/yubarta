@@ -36,6 +36,7 @@ mypy = "^1.15.0"
 types-paramiko = "^3.5.0"
 types-pyyaml = "^6.0.12"
 types-requests = "^2.32.0"
+httpx = "<0.28"
 
 [tool.mypy]
 strict = true
