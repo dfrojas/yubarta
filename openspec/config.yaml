@@ -25,4 +25,4 @@ rules:
     - Each task must have a clear, testable done condition.
     - Infra/plumbing tasks (DB schema, SSH wiring) should be separate from agent/LLM tasks.
     - Tasks that touch secrets or credentials must reference the SOPS + age resolution pattern explicitly.
-    - Emit a learning note in docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries.
+    - Emit a learning note in docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries. A good learning note is something that can be converted into a blog post or short video. Always ask yourself if the learning note can be converted as content before writing or suggesting one.
