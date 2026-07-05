@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # APP
     APP_ENV: str = "dev"
+    INVENTORY_PATH: str = "inventory.yaml"
 
     # DB
     DB_USER: str

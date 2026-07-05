@@ -1,0 +1,32 @@
+# Dev fixture inventory. Keep target labels specific (e.g. service + role)
+# rather than generic single labels — matching is subset-based, so an
+# overly generic target label set can accidentally match unrelated signals.
+
+groups:
+  ssh-defaults:
+    transport: ssh
+    user: yubarta
+    port: 22
+
+targets:
+  java-app-1:
+    group: ssh-defaults
+    address: 10.0.0.20
+    labels:
+      service: java-app
+      role: api
+    credential: sops://secrets/hosts/java-app-1.yaml#ssh_key
+    remediations:
+      - rotate-and-flush-logs
+      - restart-java-app
+
+  redis-cache-1:
+    group: ssh-defaults
+    address: 10.0.0.5
+    labels:
+      service: redis
+      role: cache
+    credential: sops://secrets/hosts/redis-cache-1.yaml#ssh_key
+    remediations:
+      - restart-redis
+      - flush-redis-cache
