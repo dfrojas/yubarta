@@ -19,3 +19,4 @@ One OpenSpec change per stage. Each change must leave the system runnable before
 | 10 | `chatops-interface` | Telegram/Slack bot, deterministic reads, deterministic actions, grounded-reasoning queries, escalations | not started |
 | 11 | `agent-observability` | LLM/tool-call tracing, token cost, per-step latency | not started |
 | 12 | `evaluation-harness` | incident replay, diagnosis and remediation scoring | not started |
+| 13 | `multi-target-correlation` | correlate Signals from different Targets into one Incident (alert-cascade root cause: one root cause tripping alarms across an orchestrator, a compute layer, storage, and a downstream app) | not started |

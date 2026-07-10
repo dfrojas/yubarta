@@ -29,4 +29,4 @@
 
 ## 7. Learning Note
 
-- [x] 7.1 Write `docs/learnings/signal-ingestion.md` covering: normalizer-vs-classmethod tradeoff, in-memory idempotency scope, FastAPI dependency injection pattern used, and anything surprising discovered during implementation
+- [x] 7.1 Write `dev-docs/learnings/signal-ingestion.md` covering: normalizer-vs-classmethod tradeoff, in-memory idempotency scope, FastAPI dependency injection pattern used, and anything surprising discovered during implementation

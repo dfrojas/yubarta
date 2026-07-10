@@ -1,7 +1,7 @@
 
 <h1>
 <p align="center">
-  <img src="documentation/img/whale-7.png" alt="yubarta-autoremediation-logo" width="150">
+  <img src="records/img/whale-7.png" alt="yubarta-autoremediation-logo" width="150">
   <p align="center">Yubarta (y5a)</p>
 </h1>
   <p align="center">
@@ -105,7 +105,7 @@ The feature-level plan for the project:
 The diagram below illustrates Yubarta's high-level architecture. It consists of one main component which every request has to pass through it (API Server) and two main inputs: eBPF Scanners and Reactors (external alert sources). Both feed into a central Director component, which evaluates rule conditions defined in YAML. When a rule matches, the corresponding Remediator executes the action on the target system — locally or across a fleet.
 
 <div align="center">
-<img src="documentation/img/arch-vertical.png" width="40%">
+<img src="records/img/arch-vertical.png" width="40%">
 </div>
 
 ## Documentation

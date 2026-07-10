@@ -48,14 +48,14 @@ ChatOps is also where escalations land and where gated approvals are requested a
 - **Signal sources:** generic alert webhook (core; Alertmanager format) + internal scanner (any command; run-mode inferred)
 - **ChatOps:** Telegram or Slack bot, mapping commands to deterministic operations and grounded-reasoning queries
 - **Queue / event layer:** a log/queue for incoming signals. `TODO:` Kafka vs something lighter — Kafka is justified only if you want to learn its internals; for a single self-monitored node it may be overkill. Decide whether it is there for learning or for need.
-- **Data stores:** Postgres for incident state, checkpoints, and incident history (decided); plus a rolling window of scanner samples. `TODO:` retention-window length.
+- **Data stores:** Postgres for incident state, checkpoints, and incident history (decided); ClickHouse for the rolling window of scanner samples (decided). `TODO:` retention-window length.
 - **Agent framework:** Pydantic AI
 - **LLM access:** LiteLLM as the single proxy, tiered routing (cheap model for classification/verification, larger for novel diagnosis)
 - **Tool exposure:** MCP — remediations and deterministic reads exposed to the agent as MCP tools
 - **Remote execution:** SSH against targets, driven by `inventory.yaml`
 - **Secrets:** SOPS + age — credentials referenced from the inventory, resolved at execution, never inline
 - **RAG store:** `TODO:` pick deliberately; retrieval quality is a learning target
-- **Agent observability:** LLM/tool-call tracing (token cost, per-step latency, tool-call traces). `TODO:` choose the approach
+- **Agent observability:** LLM/tool-call tracing (token cost, per-step latency, tool-call traces) via Langfuse (decided)
 - **Dev environment:** a webhook simulator (script/fixtures posting Alertmanager-format payloads) for the reactive path, and a controllable fake Prometheus exporter (minimal `prometheus_client`, or grafana/fake-metrics-generator / filippog/fake_exporter) for the proactive path; both drivable into bad states on demand; docker-compose for the breakable test setup. No real test service is built.
 
 > The earlier MVP may contain reusable plumbing (ingestion, queue, persistence, a Director). Treat its README/blog as stale — verify against current code before reusing anything.
@@ -161,7 +161,7 @@ targets:
 
 ## External Dependencies
 
-LiteLLM, Pydantic AI, MCP server runtime, SOPS + age, Postgres, the chosen vector store, the chosen queue, a Telegram/Slack bot SDK; for dev, a webhook simulator and a fake Prometheus exporter.
+LiteLLM, Pydantic AI, MCP server runtime, SOPS + age, Postgres, ClickHouse (scanner sample window), the chosen vector store, the chosen queue, a Telegram/Slack bot SDK; for dev, a webhook simulator and a fake Prometheus exporter.
 
 ## Capabilities
 

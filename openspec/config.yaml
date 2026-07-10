@@ -5,7 +5,7 @@ context: |
   Learning project: applied AI (RAG, prompt caching, agent design) + distributed systems (queues, idempotent workers, stateful processes).
   Core safety: AI diagnoses and selects; deterministic code executes; humans gate destructive actions; LLM never in detection path.
   TBDs: queue layer, RAG store, agent observability approach.
-  Full spec: docs/yubarta-spec.md
+  Full spec: dev-docs/yubarta-spec.md
 
 rules:
   proposal:
@@ -13,11 +13,13 @@ rules:
     - Include a "Non-goals" section for any capability that borders another.
     - Call out which TODOs from the spec are being resolved, deferred, or left open.
     - Flag any deviation from the core safety principle (LLM never in detection path; agent never runs unregistered actions; credentials never inlined).
+    - If this proposal changes product scope or direction described in `records/prd.md`, flag the deviation explicitly rather than letting the PRD silently go stale.
   design:
     - Specify the deterministic vs LLM boundary explicitly for any component that touches both.
     - State where state is persisted and what guarantees crash-safety.
     - For remediations, confirm idempotency and privilege scope.
     - For ChatOps additions, classify each operation as deterministic-read, deterministic-action, or grounded-reasoning.
+    - If this design introduces or changes a project-level architectural decision (crosses capabilities, changes a structural pattern, reverses a prior decision, not something local to this one stage), record or update an ADR under `records/adr/` via `adr-tools`, and cross-reference it from this design.md.
   specs:
     - Spec the interface; keep implementation thin for learning-target capabilities (diagnosis-agent, agent-observability, evaluation-harness, RAG store).
   tasks:
@@ -25,4 +27,6 @@ rules:
     - Each task must have a clear, testable done condition.
     - Infra/plumbing tasks (DB schema, SSH wiring) should be separate from agent/LLM tasks.
     - Tasks that touch secrets or credentials must reference the SOPS + age resolution pattern explicitly.
-    - Emit a learning note in docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries. A good learning note is something that can be converted into a blog post or short video. Always ask yourself if the learning note can be converted as content before writing or suggesting one.
+    - Include a task to build or extend a checked-in driver script (under `dev/`) that exercises the stage's capability end-to-end against the raised stack (e.g. posting a fake webhook, running a fake probe feed, driving a fake Signal through the state machine), not an ad-hoc manual check that leaves no reusable artifact.
+    - A stage's tasks are not done when tests+types+lint are green alone. Follow the loop: analyze the stage (read proposal/design/tasks) → build → raise the containers and run the stage's driver script → do not consider the task complete until the driver script reproduces the capability's real behavior end-to-end → report.
+    - Emit a learning note in dev-docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries. A good learning note is something that can be converted into a blog post or short video. Always ask yourself if the learning note can be converted as content before writing or suggesting one.

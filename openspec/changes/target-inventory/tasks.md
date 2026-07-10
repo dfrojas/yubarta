@@ -29,4 +29,4 @@
 
 ## 7. Learning Note
 
-- [x] 7.1 Write `docs/learnings/target-inventory.md` covering: the subset-match decision vs. exact-equality, and anything surprising discovered during implementation
+- [x] 7.1 Write `dev-docs/learnings/target-inventory.md` covering: the subset-match decision vs. exact-equality, and anything surprising discovered during implementation

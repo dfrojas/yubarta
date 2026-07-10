@@ -9,8 +9,9 @@ Write and create a git commit for the current changes following Conventional Com
 
 1. Run `git status` and `git diff HEAD` to understand what changed.
 2. Draft the commit message following the format below.
-3. Show the message to the user and ask for confirmation before running `git commit`.
-4. On confirmation, run `git commit -m "<message>"`.
+3. Re-read the draft line by line against every rule below and against the Anti-patterns section. Rewrite or delete any line that fails one. Do this before showing it, not after the user catches it.
+4. Show the message to the user and ask for confirmation before running `git commit`.
+5. On confirmation, run `git commit -m "<message>"`.
 
 ---
 
@@ -57,3 +58,13 @@ The capability or module affected, in kebab-case. Use the folder name or domain 
 - Use plain prose or short bullet points
 - Separate from the summary with a blank line
 - Never use em-dashes (—); use a comma, colon, or rephrase instead
+- Default to the shortest version that's still true. A one-paragraph body is normal, not a sign of insufficient effort.
+
+## Anti-patterns
+
+Real mistakes from past drafts, kept here as concrete negative examples because abstract guidance alone didn't prevent them.
+
+- **Restating the diff as a list of what changed.** Bad: "Update every reference across CLAUDE.md, openspec config, README, and OpenSpec change artifacts to match." If `git diff --stat` already shows it, don't restate it in prose. State why the change was needed, not the mechanics of applying it.
+- **Formulaic repetition.** Bad: three paragraphs in a row, each shaped "X was Y because Z." Vary sentence structure across paragraphs. Don't reuse the same reasoning connector (e.g. "because") in more than one paragraph.
+- **Solution dressed up as motivation.** Bad: "needed a stronger, enforced bar," "written down anywhere durable." These describe the fix, not the problem that came before it. Motivation must describe what was wrong or missing beforehand. If a sentence would still make sense after deleting the diff, it's not motivation, it's a description of the change.
+- **Padding.** Bad: "misleading scope judgment at the moments it mattered most," "quietly getting details wrong in ways that only surfaced later." Cut any adjective, qualifier, or clause that doesn't survive being deleted. If the sentence means the same thing shorter, use the shorter version.

@@ -54,4 +54,4 @@
 - [x] 7.2 Update all test imports to match new module paths
 - [x] 7.3 Run `make test` — all existing tests pass
 - [x] 7.4 Run `make check` — mypy reports no errors
-- [x] 7.5 Write `docs/learnings/cleanup-and-foundation.md` covering: folder layout rationale, Signal vs Alert decision, Protocol placement in domain/, and anything surprising during the move
+- [x] 7.5 Write `dev-docs/learnings/cleanup-and-foundation.md` covering: folder layout rationale, Signal vs Alert decision, Protocol placement in domain/, and anything surprising during the move

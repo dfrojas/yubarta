@@ -30,4 +30,4 @@ Signals arriving from ingestion carry only labels — Yubarta has no notion yet 
 - New `Target`/`InventoryGroup` Pydantic models and an `InventoryStore`-style Protocol port in `yubarta/domain/ports.py` if a seam is warranted.
 - New `inventory.yaml` (dev fixture) plus a documented location for the real file (config-driven, not committed).
 - No changes to existing ingestion routes or the `Signal` model.
-- Resolves the spec's "label-matching is unspecified" TODO (docs/yubarta-spec.md:146); leaves credential resolution and scan/threshold TODOs open for later stages.
+- Resolves the spec's "label-matching is unspecified" TODO (dev-docs/yubarta-spec.md:146); leaves credential resolution and scan/threshold TODOs open for later stages.

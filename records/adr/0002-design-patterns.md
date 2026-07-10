@@ -4,7 +4,7 @@ Date: 2025-04-01
 
 ## Status
 
-Accepted
+Superceded by [3. Capability-aligned architecture](0003-capability-aligned-architecture.md)
 
 ## Context
 

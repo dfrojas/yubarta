@@ -1,6 +1,6 @@
 ## Context
 
-`yubarta/ingestion/` normalizes external alerts into `Signal` objects (`yubarta/domain/signal.py`) and stores them idempotently. Nothing downstream yet knows how to turn a `Signal`'s `labels` into a concrete host to act on. `docs/yubarta-spec.md:100-148` sketches an `inventory.yaml` format (`groups` + `targets`, label matching, `sops://` credential references, per-target `remediations` allowlist) and flags label-matching as an open TODO.
+`yubarta/ingestion/` normalizes external alerts into `Signal` objects (`yubarta/domain/signal.py`) and stores them idempotently. Nothing downstream yet knows how to turn a `Signal`'s `labels` into a concrete host to act on. `dev-docs/yubarta-spec.md:100-148` sketches an `inventory.yaml` format (`groups` + `targets`, label matching, `sops://` credential references, per-target `remediations` allowlist) and flags label-matching as an open TODO.
 
 This stage builds the inventory schema, a loader, and the label-matching function only. It does not open connections, resolve credentials, or evaluate scan/thresholds — those are `remote-execution` and `proactive-scanner`'s job.
 
