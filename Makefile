@@ -42,6 +42,25 @@ run-mypy: ## Run the mypy type checker
 	@echo "🐋 ${GREEN}Running mypy...${NC} 🐋"
 	docker compose -f docker-compose.dev.yaml run --rm api poetry run mypy .
 
+.PHONY: migrate
+migrate: ## Apply all pending database migrations (alembic upgrade head)
+	# Django equivalent: python manage.py migrate
+	@echo "🐋 ${GREEN}Applying migrations...${NC} 🐋"
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run alembic upgrade head
+
+.PHONY: migrate-down
+migrate-down: ## Roll back the last applied migration (alembic downgrade -1)
+	# Django equivalent: python manage.py migrate <app> <previous_migration> (step back one)
+	@echo "🐋 ${GREEN}Rolling back last migration...${NC} 🐋"
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run alembic downgrade -1
+
+.PHONY: migration
+migration: ## Autogenerate a new migration from ORM changes: make migration MSG="description"
+	# Django equivalent: python manage.py makemigrations
+	@if [ -z "$(MSG)" ]; then echo "${RED}MSG is required: make migration MSG=\"description\"${NC}"; exit 1; fi
+	@echo "🐋 ${GREEN}Generating migration...${NC} 🐋"
+	docker compose -f docker-compose.dev.yaml run --rm api poetry run alembic revision --autogenerate -m "$(MSG)"
+
 docker-build: ## Build the development image
 	docker compose -f docker-compose.dev.yaml build
 

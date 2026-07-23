@@ -1,53 +1,56 @@
-from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Table, Text
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Table,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import registry
-
-# Alert removed — replaced by Signal in domain/
 
 mapper_registry = registry()
 
-alerts = Table(
-    "alerts",
+incidents = Table(
+    "incidents",
     mapper_registry.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("external_id", String(255), nullable=False),
-    Column("source", String(255), nullable=False),
-    Column("title", String(255), nullable=False),
-    Column("message", Text, nullable=False),
-    Column("status", String(255), nullable=False),
-    Column("severity", String(255), nullable=False),
-    Column("scope", String(255), nullable=True),
-    Column("tags", JSON, nullable=False),
-    Column("occurred_at", DateTime(timezone=True), nullable=False),
-    Column("received_at", DateTime(timezone=True), nullable=False),
-    Column("fingerprint", String(255), nullable=False),
-    Column("enriched", Boolean, nullable=False),
-    Column("raw_payload", JSON, nullable=False),
-    Index("idx_alerts_fingerprint_occurred_at", "fingerprint", "occurred_at"),
+    Column("id", String(64), primary_key=True),
+    Column("signal_id", String(64), nullable=False, unique=True),
+    Column("signal_fingerprint", String(64), nullable=False),
+    Column("signal_raw", JSONB, nullable=False),
+    Column("target_name", String(255), nullable=False),
+    Column("state", String(32), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Index("idx_incidents_target_name", "target_name"),
 )
 
-# remediations = Table(
-#     "remediations",
-#     mapper_registry.metadata,
-#     Column("id", Integer, primary_key=True, autoincrement=True),
-#     Column("name", String(255), nullable=False, unique=True),
-#     Column("description", Text, nullable=True),
-#     Column("version", String(50), nullable=False, default="1.0"),
-#     Column("created_at", DateTime(timezone=True), nullable=False),
-#     Column("updated_at", DateTime(timezone=True), nullable=False),
-#     Column("tags", JSON, nullable=False, default=[]),
-#     Column("approval_required", Boolean, nullable=False, default=False),
-#     Column("auto_approve_if_ai_generated", Boolean, nullable=False, default=False),
-#     Column("match_details", JSON, nullable=False, default={}),
-#     Column("targets_details", JSON, nullable=False, default={}),
-#     Column("connection_details", JSON, nullable=False, default={}),
-#     Column("execute_details", JSON, nullable=False, default={}),
-#     Column("success_criteria_details", JSON, nullable=False, default={}),
-#     Column("ai_details", JSON, nullable=False, default={}),
-#     Column("telemetry_details", JSON, nullable=False, default={}),
-#     Column("policy_details", JSON, nullable=False, default={}),
-# )
+incident_transitions = Table(
+    "incident_transitions",
+    mapper_registry.metadata,
+    Column("id", String(64), primary_key=True),
+    Column("incident_id", String(64), ForeignKey("incidents.id"), nullable=False),
+    Column("from_state", String(32), nullable=False),
+    Column("to_state", String(32), nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Index("idx_incident_transitions_incident_id", "incident_id"),
+)
 
-
-# TODO(incident-store): map Signal/Incident to tables once the domain schema is defined
-def start_mappers() -> None:
-    pass
+remediation_attempts = Table(
+    "remediation_attempts",
+    mapper_registry.metadata,
+    Column("id", String(64), primary_key=True),
+    Column("incident_id", String(64), ForeignKey("incidents.id"), nullable=False),
+    Column("remediation_name", String(255), nullable=False),
+    Column("idempotency_key", String(128), nullable=False, unique=True),
+    Column("attempt_sequence", Integer, nullable=False),
+    Column("approval_status", String(32), nullable=False, default="not_required"),
+    Column("approved_by", String(255), nullable=True),
+    Column("approved_at", DateTime(timezone=True), nullable=True),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("completed_at", DateTime(timezone=True), nullable=True),
+    Column("outcome", String(32), nullable=True),
+    Column("evidence", JSONB, nullable=True),
+    Index("idx_remediation_attempts_incident_id", "incident_id"),
+)
