@@ -1,0 +1,62 @@
+## Context
+
+`yubarta/infra/db/` already has async SQLAlchemy 2.0 plumbing (`Database`, `get_fastapi_session`, `get_raw_session`) left over from the pre-refactor MVP, but the schema itself (`orm.py`) is dead: an unused `alerts` table (superseded by the `Signal` model) and a commented-out `remediations` table. `repository.py` and `domain/ports.py` (`SignalStore`) are explicit placeholders marked `TODO(incident-store)`. There is no migration tooling; `Database.create_database` is a no-op stub.
+
+This stage only builds the store. It sits downstream of `signal-ingestion` (produces `Signal`) and `target-inventory` (resolves a `Signal` to a `Target`), and upstream of `remediation-loop` (stage 4, the orchestrator that will drive transitions through this store), `chatops-interface` (deterministic reads), `evaluation-harness` (replays incident history), and the `diagnosis-agent`'s RAG layer. The RAG layer's vector store is a separate, still-undecided piece of infrastructure (`dev-docs/yubarta-spec.md`, "RAG store: TODO"); this Postgres store is the relational source of truth that a future indexing step would read from and embed into that vector store, not the vector store itself.
+
+## Goals / Non-Goals
+
+**Goals:**
+- Durable, crash-safe persistence for one incident's full lifecycle: current state, the triggering `Signal`, the resolved `Target`, and every remediation attempt.
+- A resumable audit trail: if the process crashes mid-incident, the next reader can reconstruct exactly which state the incident was in and which remediation attempts were already recorded, without re-deriving it from logs.
+- A remediation attempt is recorded (with idempotency key) **before** it executes, so a crash between "decided to run X" and "X finished" is detectable on restart instead of silently re-running a possibly-destructive remediation.
+- A narrow `IncidentStore` port the orchestrator, ChatOps, RAG indexer, and eval harness all consume the same way, so none of them touch SQLAlchemy directly.
+- Alembic migrations, since this is the first real schema the project ships (everything before was schema-less or a dead stub).
+
+**Non-Goals:**
+- Driving the state machine (deciding *when* a transition happens) — that's the Director (the deterministic orchestrator), stage 4. This store only persists what the Director tells it.
+- ChatOps read endpoints, RAG indexing/embedding of incident text, or eval replay logic — those are stages 8, 10, 12 and consume this port, not build it.
+- The rolling window of scanner samples (ClickHouse, per the spec) — unrelated data store, different capability (`proactive-scanner`).
+- Ensuring only one Director drives a given incident — that is the Director/queue stage's job (partition incidents by id, or a heartbeated ownership lease). The Director deploys as multiple replicas, so this store does *not* assume a single writer; instead it makes concurrent writes *safe* (`SELECT ... FOR UPDATE` on transitions, a unique pre-execution idempotency key on attempts), so a brief two-Director overlap cannot lose a transition or double-execute a remediation.
+
+## Decisions
+
+**Three tables, not one wide table.** `incidents` (current state, denormalized for fast reads), `incident_transitions` (append-only log of every state change), `remediation_attempts` (one row per remediation execution). Rationale: a single wide `incidents` row updated in place would satisfy "read current state" but not "resume knowing exactly what happened," since an in-place update destroys the prior state. An append-only transition log gives crash recovery (last transition = ground truth) and an audit trail for free, at the cost of one extra table and a join for full history. Alternative considered: pure event-sourcing (derive current state by folding all transitions, no denormalized column) — rejected as unnecessary complexity here; the denormalized `incidents.state` column is written in the same transaction as its `incident_transitions` row, so it can't drift.
+
+**Lifecycle states are a closed Python `StrEnum`**, matching the existing `SignalStatus`/`SignalSource` pattern in `yubarta/domain/signal.py`: `received`, `diagnosing`, `remediating`, `verifying`, `escalated`, `resolved`. The spec's `retry` is modeled as a transition (`verifying → diagnosing` or `verifying → remediating`), not a seventh state — a `retry` state would be ambiguous about which prior state to resume into after a crash.
+
+**Idempotency key is recorded on `remediation_attempts` before execution**, following the existing `signal-ingestion` precedent (ADR-0004, signal idempotency key). Key is derived deterministically from `(incident_id, remediation_name, attempt_sequence)`, not randomly generated, and carries a unique constraint. This does double duty. (1) Crash recovery: a crash-and-retry with the same inputs produces the same key, so a restarted Director detects "this exact attempt was already recorded" before invoking the remediation again. (2) Multi-replica safety: because the Director runs as multiple replicas, two of them could momentarily drive the same incident and both decide to run the same remediation; both compute the same key, the unique constraint lets exactly one insert win, and the loser gets a `DuplicateAttemptError` and backs off instead of executing. This unique-key-before-execution is the actual enforcement of "never run a destructive remediation twice", the `SELECT ... FOR UPDATE` on transitions only protects the state field, not the side effect.
+
+**Approval is audited per-attempt, not per-incident, and the store never holds the `needs_approval` flag.** Whether a remediation *requires* approval is a static property of the remediation definition (destructive?/idempotent?/privilege tags), owned by the `remediation-registry` capability and its MCP tool metadata (`dev-docs/yubarta-spec.md`, "remediation-registry — each tagged (destructive?, ...)"); it is identical across every incident and every attempt, so persisting it here would duplicate registry state. What *this* store records is the audit trail of a specific execution: `remediation_attempts` carries an `approval_status` (`not_required`, `pending`, `approved`, `denied`), plus `approved_by` and `approved_at`. This follows the same record-before-execution principle as the idempotency key: an approval-requiring attempt is written `pending` before it runs, so a crash between "requested approval" and "got an answer" is recoverable rather than re-prompting or silently proceeding. The approval channel is deliberately not modeled (approval may arrive via ChatOps, CLI, or a policy allowlist per the spec's gating capability); the store only records *that* an attempt was approved/denied and by whom, not *how*. Driving the approval (deciding when to request it, enforcing the block until it arrives) is the `guardrails-and-gating` stage's job, not this store's; this stage only persists the outcome the driver hands it.
+
+**Target is stored by name (string), not a foreign key.** The inventory (`target-inventory`, stage 2) is a YAML file loaded at process startup, not a persisted table — there is no `targets` table to reference. `incidents.target_name` is a plain indexed string column; resolving it back to a live `Target` object means re-reading the current inventory, which is correct behavior anyway (inventory can change between when an incident was created and when it's read later).
+
+**Signal is stored as JSONB, not normalized columns**, keyed by the `Signal.id`/`Signal.fingerprint` the domain model already computes (indexed columns), with the full `Signal.model_dump()` in a JSONB column for anything not worth a dedicated column (labels, raw payload). Matches how `Signal.raw` already carries opaque source payloads.
+
+**Transitions guard against concurrent writers with `SELECT ... FOR UPDATE` (pessimistic row locking), not a `version` column.** `transition(incident_id, to_state)` locks the incident row as it reads it: any second writer attempting to transition the same incident blocks until the first commits, then proceeds on top of the committed state. Two transitions therefore serialize instead of interleaving, so no update is silently lost. There is no `version` column and no caller-provided expected-version: the caller passes only the incident id and the target state, and the database enforces ordering.
+
+Rationale: the Director (the deterministic orchestrator that drives an incident's state machine) is expected to deploy as **multiple replicas** for HA and throughput, all pulling incidents from a shared queue. "One Director per incident" is therefore not structurally guaranteed, a queue rebalance or a lapsed ownership lease can briefly put two replicas on the same incident. Reducing that to "rare" is the Director/queue stage's job (partition incidents by id, or a heartbeated ownership lease); making it *correct when it happens anyway* is this store's job. `SELECT ... FOR UPDATE` serializes the two replicas' transitions at the database so neither is lost, without the caller having to catch and retry a conflict error (the optimistic-locking alternative). The lock is held only for the short read-update-insert transaction, with no slow work (LLM calls, SSH) inside it, so pessimistic locking's usual latency downside does not apply. The heavier guarantee, that two live Directors cannot double-*execute* a remediation, is carried by the pre-execution idempotency key on `remediation_attempts` (below), not by this lock.
+
+**Alembic for migrations**, added as a new dependency. It's the standard migration tool for SQLAlchemy, not a decision needing its own record; this is simply the first stage where a real schema exists to migrate. `Database.create_database`'s `metadata.create_all` stub doesn't support altering an existing production schema safely, which the project will need starting now.
+
+**`IncidentStore` Protocol replaces `SignalStore`** in `yubarta/domain/ports.py`. `SignalStore` was never implemented against a real schema (the placeholder repository has no methods) and doesn't match what's actually needed: nothing in the spec calls for persisting a bare `Signal` independent of the incident it triggered.
+
+## Risks / Trade-offs
+
+- **JSONB growth on `incidents.signal_raw` and `remediation_attempts.evidence`** (free-form diagnosis evidence, per the spec's unstructured-evidence path) → mitigate by treating retention/pruning as a follow-up concern once the RAG/eval stages define what subset of history actually needs to be indexed or replayed long-term; not blocking for this stage.
+- **`SELECT ... FOR UPDATE` blocks a second writer for the duration of a transition** → acceptable because the locked transaction only does a read-update-insert with no slow work (LLM calls, SSH) inside it, so the wait is bounded; the Director/queue stage still owns reducing two-replica overlap to rare, this store only guarantees it stays correct (serialized, not lost) when it happens.
+- **Alembic is new operational surface** (a migration must be run before first deploy, and on every subsequent schema change) → mitigate with a single `alembic upgrade head` documented in `dev-docs/dev.md` and wired into the dev rig's startup.
+- **BREAKING**: dropping the dead `alerts` table and `SignalStore` port has no current consumers, so no migration-of-data concern, but confirm no in-flight branch depends on either before merging.
+
+## Migration Plan
+
+1. Add `alembic` to `pyproject.toml`, pinned `major.minor.patch`.
+2. `alembic init` under `yubarta/infra/db/migrations/`, wire `env.py` to the existing `Database`/`settings.DATABASE_URI`.
+3. First migration: drop `alerts`, create `incidents`, `incident_transitions`, `remediation_attempts`.
+4. `Database.create_database` becomes `alembic upgrade head` invoked at startup in dev (or a documented manual step; finalize in tasks).
+5. No rollback data concern (no production data exists yet for this project stage); rollback is `alembic downgrade -1` if needed during development.
+
+## Open Questions
+
+- Retention window for incident history (JSONB payloads, transition log) is a spec-level `TODO` (`dev-docs/yubarta-spec.md`), not resolved here — deferred to whichever stage first needs to bound storage growth (likely `evaluation-harness` or an operational-hardening pass).
+- Whether `alembic upgrade head` runs automatically on app startup (simplest for a single-node self-hosted deploy) or is a required manual step before start — left to `tasks.md` to decide as an implementation detail, not a spec-level requirement.
