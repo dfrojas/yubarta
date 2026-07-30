@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Incident creation from a matched Signal and Target
-The system SHALL create exactly one `Incident` per distinct `(Signal.id, Target)` pair, in the `received` state, persisting the triggering `Signal` and the resolved target's name.
+The system SHALL create exactly one `Incident` per distinct `Signal.id`, in the `received` state, persisting the triggering `Signal` and the resolved target's name. Deduplication is unconditional and does not depend on the incident's state: a genuine recurrence of the same condition already carries a different `Signal.id` (ADR-0004, `fingerprint + fired_at`), so a repeated `Signal.id` is always a redelivery, never a new occurrence.
 
 #### Scenario: New signal creates a new incident
-- **WHEN** a `Signal` with a `Signal.id` not already associated with an open incident is matched to a `Target`
+- **WHEN** a `Signal` with a `Signal.id` not already persisted is matched to a `Target`
 - **THEN** the store creates a new `Incident` in the `received` state referencing that `Signal` and target name
 
 #### Scenario: Duplicate signal does not create a duplicate incident
@@ -22,12 +22,30 @@ The system SHALL persist every incident state transition as an append-only recor
 - **WHEN** an incident's full transition history is read back
 - **THEN** folding the transitions in order yields the same state as the incident's denormalized current-state field
 
-#### Scenario: Concurrent transitions are serialized, not silently lost
-- **WHEN** two writers (e.g. two Director replicas) attempt to transition the same incident at the same time
-- **THEN** the store serializes them so one transition fully commits before the other reads and applies on top of it, rather than the two interleaving and one silently overwriting the other
+### Requirement: State transitions are guarded by an expected version
+The system SHALL require an expected version on every incident state transition, SHALL increment the incident's version on a successful transition, and SHALL reject a transition whose expected version does not match the persisted version rather than applying it.
+
+#### Scenario: Successful transition increments the version
+- **WHEN** an incident at version 7 transitions from `diagnosing` to `remediating` with expected version 7
+- **THEN** the transition is applied and the incident's version becomes 8
+
+#### Scenario: Stale expected version is rejected
+- **WHEN** two writers both read an incident at version 7, the first writer's transition commits, and the second writer then submits its transition with expected version 7
+- **THEN** the store rejects the second as a concurrent-modification error, leaves the incident's state and version unchanged, and appends no transition record
+
+### Requirement: Writes from a superseded lease are rejected
+The system SHALL record a lease generation on each incident and SHALL reject any state-changing write carrying a lease generation older than the persisted one, independently of whether that write's expected version matches.
+
+#### Scenario: A stale owner is rejected even with a correct expected version
+- **WHEN** a writer submits a transition whose expected version matches the incident's persisted version but whose lease generation is older than the incident's persisted lease generation
+- **THEN** the store rejects it as a stale-lease error and applies nothing
+
+#### Scenario: The current owner's write is accepted
+- **WHEN** a writer submits a transition whose expected version and lease generation both match the persisted values
+- **THEN** the transition is applied and recorded
 
 ### Requirement: Remediation attempts are recorded before execution
-The system SHALL persist a `RemediationAttempt` record, including its idempotency key, before the remediation it describes is executed, and SHALL update that same record with the outcome once execution completes.
+The system SHALL persist a `RemediationAttempt` record, including its idempotency key, before the remediation it describes is executed, and SHALL update that same record with the outcome once execution completes. This mechanism is independent of the version guard and the lease fencing token: it prevents duplicate execution of an external effect, which neither of those can prevent, and they in turn prevent lost updates and stale ownership, which it cannot.
 
 #### Scenario: Attempt is recorded pre-execution
 - **WHEN** the orchestrator decides to run a remediation for an incident
@@ -36,6 +54,10 @@ The system SHALL persist a `RemediationAttempt` record, including its idempotenc
 #### Scenario: Idempotency key detects a repeated attempt after a crash
 - **WHEN** a `RemediationAttempt` is looked up by its deterministic idempotency key and a matching row already exists with no recorded outcome
 - **THEN** the caller can determine the remediation may already be in flight or have run, instead of blindly re-executing it
+
+#### Scenario: A completed attempt is not re-executed
+- **WHEN** a `RemediationAttempt` is recorded whose deterministic idempotency key already belongs to an attempt with a recorded outcome
+- **THEN** the store rejects the write and surfaces the existing attempt, including its outcome, so the caller can read the result instead of executing the remediation again
 
 #### Scenario: Attempt outcome is recorded after execution
 - **WHEN** a previously recorded `RemediationAttempt` completes
@@ -66,3 +88,25 @@ The system SHALL expose read operations for a single incident by id, all inciden
 #### Scenario: Recent incidents are bounded
 - **WHEN** the most recent N incidents are requested
 - **THEN** the result contains at most N incidents, ordered most-recent-first, regardless of total incident count in the store
+
+### Requirement: Incident history is readable over HTTP
+
+The system SHALL expose `GET /api/v1/incidents/{incident_id}` and `GET /api/v1/incidents` (bounded, optionally filtered by target name), both served through the `IncidentStore` port.
+
+These exist so persisted state is observable before a Director exists: without them, the only evidence an incident was stored is a direct database query, which no consumer of this capability would ever do. They are deterministic reads in the sense stage 10 uses the term (no LLM in the path), and ChatOps will consume the same port rather than reimplementing the queries.
+
+#### Scenario: Reading a known incident returns its full history
+- **WHEN** `GET /api/v1/incidents/{incident_id}` is called for an existing incident
+- **THEN** the response is 200 with the incident's state, version, triggering signal, target name, and ordered remediation attempts
+
+#### Scenario: Reading an unknown incident is a 404
+- **WHEN** `GET /api/v1/incidents/{incident_id}` is called with an id that does not exist
+- **THEN** the response is 404 with a message naming the missing id, not a 500 and not an empty 200
+
+#### Scenario: The list read is bounded by default
+- **WHEN** `GET /api/v1/incidents` is called with no limit
+- **THEN** it applies a default bound rather than returning every incident ever stored
+
+#### Scenario: The list read can be filtered by target
+- **WHEN** `GET /api/v1/incidents?target_name=java-app-1` is called
+- **THEN** the response contains only incidents for that target, most-recent-first

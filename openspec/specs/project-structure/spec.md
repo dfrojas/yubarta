@@ -11,22 +11,35 @@ Defines the canonical folder layout, application entrypoint, and codebase hygien
 ### Requirement: Capability-aligned folder layout
 The codebase SHALL be organized by capability under `yubarta/`, not by technical role. Each top-level module corresponds to one capability from the project spec or to a shared infrastructure concern.
 
-The required top-level layout is:
+A capability folder is created when its capability is implemented, never in advance. An empty folder or a folder holding only an empty `__init__.py` is not a placeholder, it is noise, and SHALL be deleted.
+
+Currently implemented:
 ```
 yubarta/
   domain/       # canonical shared types and port interfaces
-  infra/        # shared low-level adapters (db, cache, ssh, messaging)
+  infra/        # shared low-level adapters (db, cache, ssh, messaging, config)
+  config/       # application settings
   ingestion/    # webhook normalization and ingest route
+  inventory/    # target inventory loading and matching
+  incident/     # incident models and errors
+  main.py       # application entrypoint
+```
+
+Reserved names for capabilities not yet implemented. These folders SHALL NOT exist until their capability has code:
+```
   director/     # remediation state machine
   scanner/      # probe runner and threshold evaluation
   agent/        # diagnosis agent and RAG
   chatops/      # Telegram/Slack bot
-  main.py       # application entrypoint
 ```
 
 #### Scenario: New capability code has an unambiguous home
 - **WHEN** a developer adds code for a new capability (e.g., scanner)
-- **THEN** there is exactly one folder under `yubarta/` where that code belongs
+- **THEN** there is exactly one folder under `yubarta/` where that code belongs, taken from the reserved names above
+
+#### Scenario: Unimplemented capabilities have no folder
+- **WHEN** the package is inspected
+- **THEN** no folder under `yubarta/` is empty or contains only an empty `__init__.py`
 
 #### Scenario: Shared infrastructure adapters live in infra/
 - **WHEN** a low-level adapter (DB session, Kafka client, Redis client, SSH client) is used by more than one capability
