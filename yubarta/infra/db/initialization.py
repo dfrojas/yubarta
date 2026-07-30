@@ -1,33 +1,26 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from yubarta.config import settings
-# from yubarta.infra.db.orm import mapper_registry, start_mappers
+from yubarta.infra.db.unit_of_work import SqlAlchemyUnitOfWork
 
 
 class Database:
-    def __init__(self, db_uri: str = settings.DATABASE_URI) -> None:
-        self.engine = create_async_engine(db_uri, echo=True, future=True)
+    """Owns the engine and session factory for one process.
+
+    Schema creation is deliberately not here. Migrations run as an explicit
+    `alembic upgrade head` step (the `migrate` service in the dev rig, `make migrate`
+    by hand), never on application startup: the API is meant to run as more than one
+    replica, and several replicas racing to migrate the same database on boot is a
+    worse failure than a deploy step that has to be ordered.
+    """
+
+    def __init__(self, db_uri: str = settings.DATABASE_URI, echo: bool = False) -> None:
+        self.engine = create_async_engine(db_uri, echo=echo, future=True)
         self.session_factory = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
 
-    async def create_database(self) -> None:
-        """Create all tables defined in the metadata."""
-        print("Creating database")
-        # async with self.engine.begin() as conn:
-        #     await conn.run_sync(mapper_registry.metadata.create_all)
+    @property
+    def unit_of_work(self) -> SqlAlchemyUnitOfWork:
+        return SqlAlchemyUnitOfWork(self.session_factory)
 
-    # async def get_session(self) -> AsyncSession:
-    #     """Get a new session for database operations."""
-    #     return self.session_factory()
-
-    # async def close(self) -> None:
-    #     """Dispose the underlying engine, freeing any connection pools."""
-
-    #     await self.engine.dispose()
-
-
-async def init_database(db_url: str = settings.DATABASE_URI) -> Database:
-    """Initialize the database and return a ``Database`` instance."""
-    # start_mappers()
-    db = Database(db_url)
-    await db.create_database()
-    return db
+    async def dispose(self) -> None:
+        await self.engine.dispose()

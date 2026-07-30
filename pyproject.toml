@@ -50,18 +50,13 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-# Ignore for now since still is in WIP
-module = "yubarta.entrypoints.cli.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-# Ignore for now since still is in WIP
-module = "yubarta.controllers.coordinator.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
 module = "aiokafka.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Alembic's generated revision scripts are not written to strict-mode standards.
+module = "yubarta.infra.db.migrations.*"
+disallow_untyped_defs = false
 
 [tool.ruff]
 line-length = 120
@@ -91,9 +86,13 @@ addopts = """
     --verbose
     --durations=10
 """
-pythonpath = ["./src"]
+pythonpath = ["."]
 testpaths = ["./tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: exercises real infrastructure (Postgres), not an isolated unit",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

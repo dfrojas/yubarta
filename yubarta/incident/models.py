@@ -44,11 +44,39 @@ class RemediationAttempt(BaseModel):
     evidence: dict[str, Any] | None
 
 
+class IncidentTransition(BaseModel):
+    """One entry of the append-only lifecycle log.
+
+    Readable, not just writable: the log is what a restarted process folds to learn
+    what actually happened, so a store that only appends to it would make crash
+    recovery unverifiable.
+    """
+
+    id: str
+    incident_id: str
+    from_state: IncidentState
+    to_state: IncidentState
+    occurred_at: datetime
+
+
 class Incident(BaseModel):
+    """One Signal-driven remediation lifecycle.
+
+    `version` and `lease_generation` guard two different races and are never
+    collapsed into one counter (ADR-0006). `version` moves on every transition
+    and detects that the state changed under a caller. `lease_generation` moves
+    only when the Director acquires the ownership lease and detects that
+    ownership changed, which a correct `version` cannot reveal.
+    """
+
     id: str
     signal: Signal
     target_name: str
     state: IncidentState
+    version: int
+    lease_owner: str | None
+    lease_generation: int
+    lease_expires_at: datetime | None
     created_at: datetime
     updated_at: datetime
     attempts: list[RemediationAttempt]

@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import TypeVar
 
 import yaml
 from pydantic import ValidationError
@@ -10,7 +10,7 @@ from .config_schemas import FullConfig
 T = TypeVar("T", bound=FullConfig)  # Bound to FullConfig or a common base if more models
 
 
-def load_config_from_yaml(file_path: str, model: Type[T] = FullConfig) -> T:  # type: ignore[assignment]
+def load_config_from_yaml(file_path: str, model: type[T] = FullConfig) -> T:  # type: ignore[assignment]
     """
     Loads a YAML file from the given path, parses it into the specified Pydantic model,
     validates the structure, and returns the parsed object.
@@ -33,8 +33,8 @@ def load_config_from_yaml(file_path: str, model: Type[T] = FullConfig) -> T:  # 
             raw_data = yaml.safe_load(f)
     except FileNotFoundError:
         raise
-    except yaml.YAMLError as e:
-        raise yaml.YAMLError(f"Error parsing YAML data from file: {file_path}\n{e}")
+    except yaml.YAMLError as error:
+        raise yaml.YAMLError(f"Error parsing YAML data from file: {file_path}\n{error}") from error
 
     if raw_data is None:
         pass  # Let Pydantic handle validation of None data if it's not valid for the model

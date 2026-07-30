@@ -6,6 +6,7 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import registry
@@ -21,6 +22,13 @@ incidents = Table(
     Column("signal_raw", JSONB, nullable=False),
     Column("target_name", String(255), nullable=False),
     Column("state", String(32), nullable=False),
+    # Optimistic concurrency control: bumped by every accepted transition.
+    Column("version", Integer, nullable=False, server_default=text("0")),
+    # Fencing token: bumped only when the Director acquires the ownership lease.
+    # Deliberately separate from `version`, they guard different races (ADR-0006).
+    Column("lease_owner", String(255), nullable=True),
+    Column("lease_generation", Integer, nullable=False, server_default=text("0")),
+    Column("lease_expires_at", DateTime(timezone=True), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False),
     Index("idx_incidents_target_name", "target_name"),
@@ -45,7 +53,7 @@ remediation_attempts = Table(
     Column("remediation_name", String(255), nullable=False),
     Column("idempotency_key", String(128), nullable=False, unique=True),
     Column("attempt_sequence", Integer, nullable=False),
-    Column("approval_status", String(32), nullable=False, default="not_required"),
+    Column("approval_status", String(32), nullable=False, server_default=text("'not_required'")),
     Column("approved_by", String(255), nullable=True),
     Column("approved_at", DateTime(timezone=True), nullable=True),
     Column("started_at", DateTime(timezone=True), nullable=False),

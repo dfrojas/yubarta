@@ -3,7 +3,12 @@ from datetime import datetime, timezone
 import pytest
 
 from yubarta.domain.signal import Signal, SignalSource, SignalStatus
-from yubarta.inventory.matcher import AmbiguousTargetError, NoMatchingTargetError, match_target
+from yubarta.inventory.matcher import (
+    AmbiguousTargetError,
+    NoMatchingTargetError,
+    match_target,
+    match_target_entry,
+)
 from yubarta.inventory.schema import Inventory, Target
 
 
@@ -50,6 +55,16 @@ def test_ambiguous_match_raises_with_all_candidates():
     with pytest.raises(AmbiguousTargetError) as exc_info:
         match_target(inventory, signal)
     assert set(exc_info.value.candidates) == {"java-app-1", "java-app-2"}
+
+
+def test_match_target_entry_returns_the_inventory_name_with_the_target():
+    inventory = Inventory(targets={"java-app-1": make_target({"service": "java-app"})})
+    signal = make_signal({"service": "java-app"})
+
+    name, matched = match_target_entry(inventory, signal)
+
+    assert name == "java-app-1"
+    assert matched is inventory.targets["java-app-1"]
 
 
 def test_extra_signal_labels_do_not_block_a_match():

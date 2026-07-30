@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
+    DB_ECHO: bool = False
 
     # Kafka
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"

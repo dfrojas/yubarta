@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from typing import Any
 
 from yubarta.domain.signal import Signal, SignalSource, SignalStatus
 
 
-def normalize_alertmanager(payload: dict) -> list[Signal]:
+def normalize_alertmanager(payload: dict[str, Any]) -> list[Signal]:
     signals = []
     for alert in payload.get("alerts", []):
         status = (

@@ -1,3 +1,5 @@
+from typing import Any
+
 from yubarta.domain.signal import SignalSource, SignalStatus
 from yubarta.ingestion.normalizers.alertmanager import normalize_alertmanager
 
@@ -13,7 +15,7 @@ FIRING_ALERT = {
 RESOLVED_ALERT = {**FIRING_ALERT, "status": "resolved"}
 
 
-def alertmanager_payload(*alerts: dict) -> dict:
+def alertmanager_payload(*alerts: dict[str, Any]) -> dict[str, Any]:
     return {"receiver": "webhook", "status": "firing", "alerts": list(alerts)}
 
 

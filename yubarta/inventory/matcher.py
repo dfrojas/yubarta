@@ -40,7 +40,13 @@ class AmbiguousTargetError(InventoryMatchError):
         super().__init__(f"ambiguous target match: {candidates}")
 
 
-def match_target(inventory: Inventory, signal: Signal) -> Target:
+def match_target_entry(inventory: Inventory, signal: Signal) -> tuple[str, Target]:
+    """Resolve a signal to its target and that target's inventory name.
+
+    Callers that persist the match need the name, not the object: the inventory is a
+    YAML file reloaded per process, so there is no id to store and a `Target`
+    instance means nothing outside the process that loaded it.
+    """
     matches = {
         name: target for name, target in inventory.targets.items() if target.labels.items() <= signal.labels.items()
     }
@@ -48,4 +54,8 @@ def match_target(inventory: Inventory, signal: Signal) -> Target:
         raise NoMatchingTargetError(f"no target matches labels {signal.labels}")
     if len(matches) > 1:
         raise AmbiguousTargetError(sorted(matches.keys()))
-    return next(iter(matches.values()))
+    return next(iter(matches.items()))
+
+
+def match_target(inventory: Inventory, signal: Signal) -> Target:
+    return match_target_entry(inventory, signal)[1]

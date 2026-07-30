@@ -1,41 +1,64 @@
+"""Real Postgres for integration tests.
+
+The schema is applied by the project's own Alembic migration, not by
+`metadata.create_all`. That costs a few seconds per session and buys something the
+shortcut cannot: a migration that drifts from the ORM definition fails the suite
+instead of passing quietly and only surfacing on a real deploy.
 """
-Configuration to spin up a real database for __integration__ testing purposes.
-"""
+
+import asyncio
+from pathlib import Path
 
 import asyncpg
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from alembic import command
+from alembic.config import Config
 
 from yubarta.config import settings
-from yubarta.infra.db.orm import mapper_registry
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ALEMBIC_INI = PROJECT_ROOT / "alembic.ini"
+INCIDENT_TABLES = ("incidents", "incident_transitions", "remediation_attempts")
 
 
 class TestDatabase:
-    def __init__(self, db_uri: str = settings.DATABASE_URI):
-        self.admin_database_url = (
-            f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
+    """Creates, migrates and drops the test database.
+
+    Sync on purpose. Alembic's `env.py` calls `asyncio.run` itself, so driving it
+    from inside a running loop would fail; keeping this outside async code avoids
+    nesting loops instead of working around it.
+    """
+
+    @property
+    def _admin_uri(self) -> str:
+        return (
+            f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}"
+            f"@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
         )
 
-    async def setup(self):
-        await self.create_test_database()
-        self.engine = create_async_engine(settings.DATABASE_URI, echo=True, future=True)
-        self.session_factory = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
-        await self.init_test_db_schema()
+    def create(self) -> None:
+        asyncio.run(self._recreate_database())
+        command.upgrade(self._alembic_config(), "head")
 
-    async def override_get_db(self):
-        async with self.session_factory() as session:
-            yield session
+    def drop(self) -> None:
+        asyncio.run(self._drop_database())
 
-    async def create_test_database(self):
-        conn = await asyncpg.connect(self.admin_database_url)
-        await conn.execute(f"DROP DATABASE IF EXISTS {settings.DB_NAME} WITH (FORCE)")
-        await conn.execute(f"CREATE DATABASE {settings.DB_NAME}")
-        await conn.close()
+    def _alembic_config(self) -> Config:
+        config = Config(str(ALEMBIC_INI))
+        # env.py reads settings.DATABASE_URI, which points at the test database
+        # because the settings were configured from .env.ci.
+        return config
 
-    async def init_test_db_schema(self):
-        """Create all tables defined in the metadata"""
-        async with self.engine.begin() as conn:
-            await conn.run_sync(mapper_registry.metadata.create_all)
+    async def _recreate_database(self) -> None:
+        connection = await asyncpg.connect(self._admin_uri)
+        try:
+            await connection.execute(f"DROP DATABASE IF EXISTS {settings.DB_NAME} WITH (FORCE)")
+            await connection.execute(f"CREATE DATABASE {settings.DB_NAME}")
+        finally:
+            await connection.close()
 
-    async def drop_test_database(self):
-        async with self.engine.begin() as conn:
-            await conn.run_sync(mapper_registry.metadata.drop_all)
+    async def _drop_database(self) -> None:
+        connection = await asyncpg.connect(self._admin_uri)
+        try:
+            await connection.execute(f"DROP DATABASE IF EXISTS {settings.DB_NAME} WITH (FORCE)")
+        finally:
+            await connection.close()

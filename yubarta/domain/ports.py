@@ -6,6 +6,7 @@ from yubarta.incident.models import (
     AttemptOutcome,
     Incident,
     IncidentState,
+    IncidentTransition,
     RemediationAttempt,
 )
 
@@ -13,7 +14,22 @@ from yubarta.incident.models import (
 class IncidentStore(Protocol):
     async def create(self, signal: Signal, target_name: str) -> Incident: ...
 
-    async def transition(self, incident_id: str, to_state: IncidentState) -> Incident: ...
+    async def transition(
+        self,
+        incident_id: str,
+        to_state: IncidentState,
+        expected_version: int,
+        lease_generation: int,
+    ) -> Incident:
+        """Apply a state change, guarded by two independent mechanisms (ADR-0006).
+
+        `expected_version` rejects a write whose view of the state is stale.
+        `lease_generation` rejects a write from a superseded owner, which a matching
+        version cannot detect. Neither substitutes for the other, and neither
+        prevents a remediation from executing twice: that is the pre-execution
+        idempotency key on `record_attempt`.
+        """
+        ...
 
     async def record_attempt(
         self,
@@ -37,6 +53,8 @@ class IncidentStore(Protocol):
     ) -> RemediationAttempt: ...
 
     async def get(self, incident_id: str) -> Incident | None: ...
+
+    async def list_transitions(self, incident_id: str) -> list[IncidentTransition]: ...
 
     async def list_by_target(self, target_name: str) -> list[Incident]: ...
 

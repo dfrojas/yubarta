@@ -1,6 +1,6 @@
 import os
-from redis.asyncio import Redis
 
+from redis.asyncio import Redis
 
 redis = Redis(
     host=os.getenv("REDIS_HOST", "redis"),

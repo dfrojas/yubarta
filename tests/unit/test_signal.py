@@ -1,18 +1,16 @@
 from datetime import datetime, timezone
 
-import pytest
-
 from yubarta.domain.signal import Signal, SignalSource, SignalStatus
 
 
 def make_signal(**overrides) -> Signal:
-    defaults = dict(
-        status=SignalStatus.firing,
-        source=SignalSource.webhook,
-        labels={"service": "java-app", "env": "prod"},
-        fired_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-        raw={"alert": "DiskFull"},
-    )
+    defaults = {
+        "status": SignalStatus.firing,
+        "source": SignalSource.webhook,
+        "labels": {"service": "java-app", "env": "prod"},
+        "fired_at": datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        "raw": {"alert": "DiskFull"},
+    }
     return Signal(**(defaults | overrides))
 
 
