@@ -1,57 +1,44 @@
+x-api-build: &api-build
+  context: .
+  dockerfile: Dockerfile
+  target: python-api
+  args:
+    BUILDKIT_INLINE_CACHE: 1
+
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: python-api
-      args:
-        BUILDKIT_INLINE_CACHE: 1
+    build: *api-build
     container_name: yubarta-api
-    command: >
-      /app/bin/wait-for-it.sh kafka:9092 -- uvicorn yubarta.main:app --host 0.0.0.0 --port 8080 --reload
+    command: uvicorn yubarta.main:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8080:8080"
     volumes:
       - .:/app
+    # Only Postgres and the migration gate the API. Kafka and Redis are part of the
+    # rig for later stages, but no code path reaches them yet, so waiting on them
+    # would slow every `compose run` for nothing.
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
 
-  director:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: rust-director
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-    container_name: yubarta-director
+  migrate:
+    build: *api-build
+    container_name: yubarta-migrate
+    # One-shot. Migrations are never run from the API's own startup: several API
+    # replicas racing to migrate the same database is worse than an ordered step.
+    command: alembic upgrade head
     volumes:
       - .:/app
     depends_on:
-      - api
-    environment:
-      - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-
-  # worker:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     args:
-  #       BUILDKIT_INLINE_CACHE: 1
-  #   container_name: yubarta-worker
-  #   command: python -m yubarta.controllers.coordinator.injector
-  #   depends_on:
-  #     - kafka
-  #     - postgres
-  #   environment:
-  #     - DATABASE_URL=postgresql://yubarta:password@postgres:5432/yubarta
-  #     - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: "no"
 
   postgres:
     image: postgres:15
@@ -64,17 +51,25 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yubarta -d yubarta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    container_name: yubarta-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
     image: confluentinc/cp-kafka:7.9.0
-    ports:
-      - "9092:9092"
+    container_name: yubarta-kafka
+    # No host port. The advertised listener is kafka:9092, so a client on the host
+    # would be handed an address it cannot resolve anyway, and publishing 9092 only
+    # collides with whatever else the machine is running.
     depends_on:
       - zookeeper
     environment:
@@ -82,15 +77,26 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
     container_name: yubarta-redis
-    ports:
-      - "6379:6379"
+    # No host port either: 6379 is the single most contended port on a dev machine,
+    # and `docker compose exec redis redis-cli` needs no mapping.
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   pgdata:
