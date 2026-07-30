@@ -4,6 +4,11 @@ Autonomous remediation agent for self-hosted infrastructure. Deterministic detec
 
 CRITICAL: DO NOT delegate tasks to subagents. Perform all work, file reading, and coding directly on the main thread.
 
+## Chat Interactions
+- Do not end our conversations with questions
+- Do not add introductions in your responses like "apologies, my bad, you are right", etc. Always straight to the point
+- Always use plain english. Do not use expressions or weird terms
+
 ## Stack
 
 Python + Pydantic AI (agent), LiteLLM (sole LLM proxy), MCP runtime (remediations as tools), Postgres (incident store), SOPS + age (secrets), Telegram/Slack (ChatOps). Queue and vector store TBD per spec.
@@ -20,7 +25,6 @@ Python + Pydantic AI (agent), LiteLLM (sole LLM proxy), MCP runtime (remediation
 ## How to verify a change
 
 - Tests: `make test`
-- Types: `make check`
 
 ## Universal rules
 
