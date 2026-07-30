@@ -113,7 +113,15 @@ The diagram below illustrates Yubarta's high-level architecture. It consists of 
 WIP. The project still is in very early stage and API's or functionalities may change. Once it is in a more stable stage, I'll add the proper documentation
 
 ## Developing Yubarta
-Run `make init`
+
+```bash
+make init           # build the image and raise the stack
+make inject-alarm   # drive the reactive path with a fake alert, end to end
+make test           # run the suite
+```
+
+See [`dev-docs/dev.md`](dev-docs/dev.md) for the full local rig: migrations, database
+access, what the rig does not cover yet, and teardown.
 
 ## License
 

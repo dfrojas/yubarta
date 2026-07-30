@@ -28,5 +28,7 @@ rules:
     - Infra/plumbing tasks (DB schema, SSH wiring) should be separate from agent/LLM tasks.
     - Tasks that touch secrets or credentials must reference the SOPS + age resolution pattern explicitly.
     - Include a task to build or extend a checked-in driver script (under `dev/`) that exercises the stage's capability end-to-end against the raised stack (e.g. posting a fake webhook, running a fake probe feed, driving a fake Signal through the state machine), not an ad-hoc manual check that leaves no reusable artifact.
-    - A stage's tasks are not done when tests+types+lint are green alone. Follow the loop: analyze the stage (read proposal/design/tasks) → build → raise the containers and run the stage's driver script → do not consider the task complete until the driver script reproduces the capability's real behavior end-to-end → report.
+    # Quoted because of the mid-sentence colon: unquoted, YAML parses this entry as a
+    # mapping instead of a string, which made OpenSpec discard every rule in this list.
+    - "A stage's tasks are not done when tests+types+lint are green alone. Follow the loop: analyze the stage (read proposal/design/tasks) → build → raise the containers and run the stage's driver script → do not consider the task complete until the driver script reproduces the capability's real behavior end-to-end → report."
     - Emit a learning note in dev-docs/learnings/ when the change is complete, covering technical decisions, tradeoffs, and discoveries. A good learning note is something that can be converted into a blog post or short video. Always ask yourself if the learning note can be converted as content before writing or suggesting one.

@@ -2,6 +2,11 @@
 
 One OpenSpec change per stage. Each change must leave the system runnable before moving to the next.
 
+"Runnable" means a checked-in driver script under `dev/` reproduces the stage's behaviour
+against the raised stack, not that tests, types and lint are green. Stages 0 to 2 were
+marked done on the green-checks standard, and the rig had in fact been unbuildable and the
+app unable to boot since stage 0 (see `dev-docs/learnings/incident-store.md`).
+
 ## Stages
 
 | # | Change name | Capability | Status |
@@ -9,7 +14,7 @@ One OpenSpec change per stage. Each change must leave the system runnable before
 | 0 | `cleanup-and-foundation` | structural cleanup + canonical Signal model | done (2026-06-05) |
 | 1 | `signal-ingestion` | generic Alertmanager webhook, normalize to Signal, idempotency | done (2026-06-23) |
 | 2 | `target-inventory` | inventory.yaml schema + loader, label matching | done (2026-07-10) |
-| 3 | `incident-store` | Postgres schema for state machine lifecycle + remediation outcomes | in progress |
+| 3 | `incident-store` | Postgres schema for state machine lifecycle + remediation outcomes | done (2026-07-30) |
 | 4 | `remediation-loop` | orchestrator state machine, checkpointed (Received→Diagnosing→Remediating→Verifying→retry/Escalated/Resolved) | not started |
 | 5 | `remote-execution` | SSH wired to loop, SOPS credential resolution, audit trail | not started |
 | 6 | `proactive-scanner` | probe runner, periodic vs streaming inference, threshold eval, rolling window, emit Signal | not started |
