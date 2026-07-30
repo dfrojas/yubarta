@@ -16,7 +16,7 @@ Apply to all `.py` files. Several of these (line length, import ordering) are al
 - **Handle errors at the top of a function with early returns**, not deeply nested conditionals.
 - **Use specific exception types**, both when raising and when catching. `except Exception:` only as a last resort at a branch boundary, never as the default.
 - **Custom error types and real logging**, not silent `pass` or bare prints.
-- **Descriptive variable names.** No single-letter names like `i` or `j`, even in short loops.
+- **Descriptive variable names.** No single-letter names like `i` or `j`, even in short loops. or stms for statement. Always completed names.
 - **Type everything a reader would need to understand the contract**, not just what mypy strictly requires.
 - **Double quotes and f-strings** for strings and interpolation (matches `ruff format`'s configured quote style).
 - **Imports follow isort precedence**: standard library, third-party, local, already enforced by `ruff`'s `I` rule.
