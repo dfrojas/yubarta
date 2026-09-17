@@ -1,0 +1,56 @@
+---
+name: python-style
+description: Python style defaults for Yubarta. Typing, error handling, naming, imports and tests
+---
+
+# Python Style
+
+Apply to all `.py` files. Several of these (line length, import ordering) are already enforced by `ruff` (see `pyproject.toml`); they're restated here for context, not duplicated enforcement, run `poetry run ruff check .` as the actual gate.
+
+## Rules
+
+- **Pin dependencies to the full `major.minor.patch`** in Poetry, never just major or major.minor.
+- **Use current Python features** rather than patterns that predate them.
+- **Handle errors at the top of a function with early returns**, not deeply nested conditionals.
+- **Use specific exception types**, both when raising and when catching. `except Exception:` only as a last resort at a branch boundary, never as the default.
+- **Custom error types and real logging**, not silent `pass` or bare prints.
+- **Descriptive variable names.** No single-letter names like `i` or `j`, even in short loops. or stms for statement. Always completed names.
+- **Type everything a reader would need to understand the contract**, not just what mypy strictly requires.
+- **Double quotes and f-strings** for strings and interpolation (matches `ruff format`'s configured quote style).
+- **Imports follow isort precedence**: standard library, third-party, local, already enforced by `ruff`'s `I` rule.
+- **Docstrings only where the *why* isn't obvious from the name.** A function called `is_admin` doesn't need one explaining what it does; a function with a non-obvious invariant or workaround does.
+- **Context managers (`with`) for file operations and locks.**
+- **No mutable default arguments.**
+- **No global variables.**
+- **List comprehensions where they're actually more readable**, not as a reflex; a multi-condition comprehension that needs a comment to explain itself should be a loop instead.
+
+# Testing
+
+Apply to everything under `tests/`.
+
+## Rules
+
+- **pytest**, not unittest-style classes.
+- **Prefer fixtures over ad-hoc helper functions** for anything reused across tests.
+- **`conftest.py` is the config/fixture file** for a directory's shared setup, not a dumping ground.
+- **Folder layout mirrors use cases**, not implementation modules. `tests/unit/` and `tests/integration/` split by what's being verified, matching the project's existing layout.
+
+# API Style
+
+Applies to any capability's `router.py` and `routes/` (e.g. `yubarta/ingestion/router.py`, `yubarta/ingestion/routes/`). Each capability owns and versions its own router; there is no central `api_server` module.
+
+## Design
+
+- **Pydantic models for every request and response schema.** No raw dicts crossing the route boundary.
+- **Version the API.** Existing routers use an `/api/v1` prefix; keep new ones consistent.
+- **Follow the OpenAPI specification**, lean on FastAPI's built-in OpenAPI/JSON Schema generation rather than hand-rolling docs.
+- **Rate limiting is a real design concern**, not an afterthought, for any route that accepts external input (webhooks especially).
+- **Standard REST error handling**: meaningful status codes, `HTTPException` with a clear detail message, not a generic 500 for everything.
+
+## FastAPI implementation
+
+- **Prefer lifespan context managers over `@app.on_event`** for startup/shutdown.
+- **`def` for synchronous work, `async def` for actual I/O-bound work.** Don't mark something `async` just by convention if it never awaits anything.
+- **Use FastAPI's dependency injection** for shared resources and state (the existing `get_signal_store`/`get_inventory` singleton-dependency pattern), not module-level globals reached into directly from route handlers.
+- **SQLAlchemy 2.0 style** for any ORM usage in a route or its dependencies.
+- **CORS configured for local dev**, revisit before anything is exposed beyond localhost.
