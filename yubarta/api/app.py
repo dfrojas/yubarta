@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from yubarta.api.router import api_v1_router
-from yubarta.api.routes.health import router as health_router
+from yubarta.api.routes.z import router as z_router
 from yubarta.api.security import resolve_api_token
 from yubarta.config import AppConfig
 from yubarta.runtime import YubartaRuntime
@@ -39,7 +39,7 @@ def create_app(runtime: YubartaRuntime, *, manage_runtime: bool = False) -> Fast
     )
     app.state.runtime = runtime
     app.state.api_token = resolve_api_token(runtime.config)
-    app.include_router(health_router)
+    app.include_router(z_router)
     app.include_router(api_v1_router)
     return app
 

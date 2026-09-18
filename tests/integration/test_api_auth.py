@@ -33,8 +33,17 @@ async def _get(app: FastAPI, path: str, headers: dict[str, str] | None = None) -
         return await client.get(path, headers=headers or {})
 
 
-async def test_health_is_open(auth_app):  # type: ignore[no-untyped-def]
-    assert (await _get(auth_app, "/health")).status_code == 200
+async def test_healthz_is_open(auth_app):  # type: ignore[no-untyped-def]
+    response = await _get(auth_app, "/healthz")
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+
+
+async def test_whale_is_open(auth_app):  # type: ignore[no-untyped-def]
+    response = await _get(auth_app, "/whale")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "~^~^~^~^~" in response.text
 
 
 async def test_versioned_route_requires_token(auth_app):  # type: ignore[no-untyped-def]

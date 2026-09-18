@@ -37,7 +37,7 @@ def _get(server: str | None, path: str) -> object:
 
 @app.command()
 def health(server: str | None = typer.Option(None, "--server", help="Control API base URL")) -> None:
-    typer.echo(json.dumps(_get(server, "/health"), indent=2))
+    typer.echo(json.dumps(_get(server, "/healthz"), indent=2))
 
 
 @app.command()

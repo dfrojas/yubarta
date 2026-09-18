@@ -1,7 +1,7 @@
 """Yubarta Control API package.
 
 Public factory and wire schemas. Routes are versioned under ``/api/v1``; the
-``/health`` liveness probe stays unversioned.
+``/healthz`` liveness probe stays unversioned.
 """
 
 from __future__ import annotations

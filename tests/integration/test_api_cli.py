@@ -37,7 +37,7 @@ async def server_url(test_db):  # type: ignore[no-untyped-def]
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
         try:
-            response = httpx.get(f"{base}/health", timeout=2.0)
+            response = httpx.get(f"{base}/healthz", timeout=2.0)
             if response.status_code == 200:
                 break
         except httpx.HTTPError:
@@ -48,9 +48,9 @@ async def server_url(test_db):  # type: ignore[no-untyped-def]
     thread.join(timeout=15.0)
 
 
-async def test_health(server_url):  # type: ignore[no-untyped-def]
+async def test_healthz(server_url):  # type: ignore[no-untyped-def]
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{server_url}/health")
+        response = await client.get(f"{server_url}/healthz")
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
