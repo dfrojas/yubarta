@@ -6,7 +6,9 @@ import asyncio
 
 from tests.integration.fake_ssh import FakeTargetState, disconnect_all, start_fake_ssh_server
 from yubarta.config import AppConfig, LogWatch, TargetConfig
+from yubarta.diagnostics.runner import DiagnosticsRunner
 from yubarta.events.models import NormalizedEvent
+from yubarta.execution.ssh import AsyncSSHExecutor
 from yubarta.incidents.service import IncidentService
 from yubarta.persistence.repository import IncidentRepository
 from yubarta.persistence.session import create_engine, create_session_factory, init_db
@@ -28,7 +30,15 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db):  # type: ignore[no-
             target=TargetConfig(host="127.0.0.1", user="tester", key="", port=ssh_port),
             watch=[LogWatch(file="/var/log/apache2/error.log", match_any=["AH00957"])],
         )
-        service = IncidentService(config, sessions, RuleEngine.from_watches(config.watch), apply=False)
+        executor = AsyncSSHExecutor(config.target)
+        service = IncidentService(
+            config,
+            sessions,
+            RuleEngine.from_watches(config.watch),
+            executor,
+            DiagnosticsRunner(executor, config.diagnostics),
+            apply=False,
+        )
         received: list[NormalizedEvent] = []
 
         async def handler(event: NormalizedEvent) -> None:

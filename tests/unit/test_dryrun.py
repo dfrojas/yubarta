@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yubarta.config import AppConfig, CommandCheck, LogWatch, RemediationDef, TargetConfig, VerifyConfig
+from yubarta.diagnostics.runner import DiagnosticsRunner
 from yubarta.events.models import NormalizedEvent
 from yubarta.incidents.service import IncidentService
 from yubarta.persistence.repository import IncidentRepository
@@ -23,11 +24,8 @@ class _RecordingExecutor:
         return CommandResult(command=command, exit_code=0, stdout="ok", stderr="")
 
 
-async def test_dry_run_skips_remediations(test_db, monkeypatch):  # type: ignore[no-untyped-def]
-    import yubarta.incidents.service as service_module
-
+async def test_dry_run_skips_remediations(test_db):  # type: ignore[no-untyped-def]
     recorder = _RecordingExecutor()
-    monkeypatch.setattr(service_module, "AsyncSSHExecutor", lambda target: recorder)
 
     url = test_db
     engine = create_engine(url)
@@ -41,7 +39,14 @@ async def test_dry_run_skips_remediations(test_db, monkeypatch):  # type: ignore
         remediations=[RemediationDef(name="restart-tomcat", command="sudo -n systemctl restart tomcat9")],
         verify=VerifyConfig(settle_delay=0.0, interval=0.01, timeout=0.2),
     )
-    service = IncidentService(config, sessions, RuleEngine.from_watches(config.watch), apply=False)
+    service = IncidentService(
+        config,
+        sessions,
+        RuleEngine.from_watches(config.watch),
+        recorder,
+        DiagnosticsRunner(recorder, config.diagnostics),
+        apply=False,
+    )
     event = NormalizedEvent(source="log:/x.log", target="vm", message="AH00957 fail", raw="x")
     await service.handle_event(event)
     # remediation command must never execute in dry-run; only diagnostics + checks ran

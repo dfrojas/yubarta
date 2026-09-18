@@ -9,6 +9,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from tests.integration.fake_ssh import FakeTargetState, start_fake_ssh_server
 from yubarta.config import AppConfig, CommandCheck, HttpCheck, LogWatch, RemediationDef, TargetConfig, VerifyConfig
+from yubarta.diagnostics.runner import DiagnosticsRunner
+from yubarta.execution.ssh import AsyncSSHExecutor
 from yubarta.incidents.service import IncidentService
 from yubarta.persistence.repository import IncidentRepository
 from yubarta.persistence.session import create_engine, create_session_factory, init_db
@@ -59,7 +61,15 @@ async def test_remediation_loop_fake_target(test_db):  # type: ignore[no-untyped
             ],
             verify=VerifyConfig(settle_delay=0.0, interval=0.1, timeout=10.0),
         )
-        service = IncidentService(config, sessions, RuleEngine.from_watches(config.watch), apply=True)
+        executor = AsyncSSHExecutor(config.target)
+        service = IncidentService(
+            config,
+            sessions,
+            RuleEngine.from_watches(config.watch),
+            executor,
+            DiagnosticsRunner(executor, config.diagnostics),
+            apply=True,
+        )
 
         # 1-2: healthy at start
         assert state.healthy is True

@@ -19,13 +19,10 @@ def get_runtime(request: Request) -> YubartaRuntime:
 RuntimeDep = Annotated[YubartaRuntime, Depends(get_runtime)]
 
 
-async def get_incident_repository(runtime: RuntimeDep) -> AsyncIterator[IncidentRepository | None]:
-    """Yield a repository, or ``None`` while the database is not available."""
-    if runtime.sessions is None:
-        yield None
-        return
+async def get_incident_repository(runtime: RuntimeDep) -> AsyncIterator[IncidentRepository]:
+    """Yield a repository. Raises ``RuntimeError`` while the runtime is not set up."""
     async with runtime.sessions() as session:
         yield IncidentRepository(session)
 
 
-IncidentRepositoryDep = Annotated[IncidentRepository | None, Depends(get_incident_repository)]
+IncidentRepositoryDep = Annotated[IncidentRepository, Depends(get_incident_repository)]

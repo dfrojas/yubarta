@@ -15,14 +15,16 @@ ENV_NAME = "YUBARTA_TEST_API_TOKEN"
 
 
 @pytest.fixture()
-def auth_app(monkeypatch):  # type: ignore[no-untyped-def]
+async def auth_app(monkeypatch, tmp_path):  # type: ignore[no-untyped-def]
     monkeypatch.setenv(ENV_NAME, TOKEN)
     config = AppConfig(
         target=TargetConfig(host="vm", user="u", key=""),
         api=ApiConfig(token_from_env=ENV_NAME),
     )
-    runtime = YubartaRuntime(config, apply=False, database_url="sqlite+aiosqlite:///:memory:")
-    return create_app(runtime)
+    runtime = YubartaRuntime(config, apply=False, database_url=f"sqlite+aiosqlite:///{tmp_path}/auth.db")
+    await runtime.setup()
+    yield create_app(runtime)
+    await runtime.shutdown()
 
 
 async def _get(app: FastAPI, path: str, headers: dict[str, str] | None = None) -> httpx.Response:

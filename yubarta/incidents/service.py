@@ -12,7 +12,7 @@ from yubarta.checks.runner import run_all_checks, run_checks_once
 from yubarta.config import AppConfig
 from yubarta.diagnostics.runner import DiagnosticsRunner
 from yubarta.events.models import NormalizedEvent
-from yubarta.execution.ssh import AsyncSSHExecutor
+from yubarta.execution.ssh import SSHConnectionFactory
 from yubarta.incidents.models import StepKind, StepState
 from yubarta.incidents.state_machine import IncidentState
 from yubarta.persistence.repository import IncidentRepository
@@ -27,11 +27,15 @@ class IncidentService:
         config: AppConfig,
         session_factory: async_sessionmaker[AsyncSession],
         rules: RuleEngine,
+        executor: SSHConnectionFactory,
+        diagnostics: DiagnosticsRunner,
         apply: bool = False,
     ) -> None:
         self._config = config
         self._sessions = session_factory
         self._rules = rules
+        self._executor = executor
+        self._diagnostics = diagnostics
         self._apply = apply
         self._locks: dict[str, asyncio.Lock] = {}
 
@@ -60,9 +64,8 @@ class IncidentService:
             return incident_id
 
     async def _process_incident(self, incident_id: str) -> None:
-        executor = AsyncSSHExecutor(self._config.target)
         try:
-            await self._run_lifecycle(incident_id, executor)
+            await self._run_lifecycle(incident_id)
         except Exception as exc:
             logger.exception("Incident %s processing failed: %s", incident_id, exc)
             try:
@@ -83,7 +86,7 @@ class IncidentService:
             except Exception:
                 pass
 
-    async def _run_lifecycle(self, incident_id: str, executor: AsyncSSHExecutor) -> None:
+    async def _run_lifecycle(self, incident_id: str) -> None:
         # DETECTED -> DIAGNOSING
         async with self._sessions() as session:
             repo = IncidentRepository(session)
@@ -93,8 +96,7 @@ class IncidentService:
             await session.commit()
 
         # Diagnostics (best-effort, persisted)
-        diagnostics = DiagnosticsRunner(executor, self._config.diagnostics)
-        diag_results = await diagnostics.run_all()
+        diag_results = await self._diagnostics.run_all()
         async with self._sessions() as session:
             repo = IncidentRepository(session)
             row = await repo.get(incident_id)
@@ -114,7 +116,7 @@ class IncidentService:
             await session.commit()
 
         # Precheck
-        healthy, outcomes = await run_checks_once(self._config.checks, executor)
+        healthy, outcomes = await run_checks_once(self._config.checks, self._executor)
         async with self._sessions() as session:
             repo = IncidentRepository(session)
             row = await repo.get(incident_id)
@@ -168,7 +170,7 @@ class IncidentService:
 
             # Execute remediation
             try:
-                outcome = await executor.run(remediation.command, timeout=300.0)
+                outcome = await self._executor.run(remediation.command, timeout=300.0)
                 remediation_ok = outcome.exit_code == 0
                 remediation_error = None if remediation_ok else f"exit={outcome.exit_code}"
             except Exception as exc:
@@ -207,7 +209,7 @@ class IncidentService:
             # Verification with convergence
             healthy, verify_outcomes = await run_all_checks(
                 self._config.checks,
-                executor,
+                self._executor,
                 settle_delay=self._config.verify.settle_delay,
                 interval=self._config.verify.interval,
                 timeout=self._config.verify.timeout,

@@ -6,10 +6,12 @@ import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from yubarta.config import AppConfig
+from yubarta.diagnostics.runner import DiagnosticsRunner
 from yubarta.events.models import NormalizedEvent
+from yubarta.execution.ssh import AsyncSSHExecutor
 from yubarta.incidents.service import IncidentService
 from yubarta.persistence.session import create_engine, create_session_factory, init_db, resolve_database_url
 from yubarta.rules.engine import RuleEngine
@@ -41,7 +43,7 @@ class YubartaRuntime:
         self._database_url = database_url or resolve_database_url(config.database_url)
         self._engine_options = engine_options or {}
         self._engine: AsyncEngine | None = None
-        self._sessions: async_sessionmaker | None = None
+        self._sessions: async_sessionmaker[AsyncSession] | None = None
         self._supervisor = ScannerSupervisor(config)
         self._services: RuntimeServices | None = None
         self._started_at = time.monotonic()
@@ -74,7 +76,9 @@ class YubartaRuntime:
         return self._db_healthy
 
     @property
-    def sessions(self) -> async_sessionmaker | None:
+    def sessions(self) -> async_sessionmaker[AsyncSession]:
+        if self._sessions is None:
+            raise RuntimeError("Runtime not set up")
         return self._sessions
 
     async def setup(self) -> None:
@@ -85,17 +89,19 @@ class YubartaRuntime:
         self._services = self._build_services()
 
     def _build_services(self) -> RuntimeServices:
+        if self._sessions is None:
+            raise RuntimeError("Runtime not set up")
+        executor = AsyncSSHExecutor(self._config.target)
         return RuntimeServices(
             incidents=IncidentService(
                 self._config,
                 self._sessions,
                 RuleEngine.from_watches(self._config.watch),
+                executor,
+                DiagnosticsRunner(executor, self._config.diagnostics),
                 self._apply,
             ),
         )
-
-    async def handle_event(self, event: NormalizedEvent) -> str | None:
-        return await self.services.incidents.handle_event(event)
 
     async def start_scanners(self) -> None:
         services = self.services

@@ -22,12 +22,8 @@ async def _noop_lifespan(app: FastAPI) -> AsyncIterator[None]:
 @asynccontextmanager
 async def _runtime_lifespan(app: FastAPI) -> AsyncIterator[None]:
     runtime: YubartaRuntime = app.state.runtime
-    await runtime.setup()
-    await runtime.start_scanners()
-    try:
+    async with runtime.lifespan():
         yield
-    finally:
-        await runtime.shutdown()
 
 
 def create_app(runtime: YubartaRuntime, *, manage_runtime: bool = False) -> FastAPI:

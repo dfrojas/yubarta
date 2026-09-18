@@ -14,8 +14,6 @@ router = APIRouter(tags=["incidents"])
 
 @router.get("/incidents", response_model=list[IncidentSummary])
 async def list_incidents(repository: IncidentRepositoryDep) -> list[IncidentSummary]:
-    if repository is None:
-        return []
     rows = await repository.list_incidents()
     return [IncidentSummary.model_validate(row) for row in rows]
 
@@ -25,8 +23,6 @@ async def get_incident(
     incident_id: Annotated[str, Path(description="Incident id")],
     repository: IncidentRepositoryDep,
 ) -> IncidentDetail:
-    if repository is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
     row = await repository.get(incident_id)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
