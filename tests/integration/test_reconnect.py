@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import asyncio
 
-from tests.integration.fake_ssh import FakeTargetState, disconnect_all, start_fake_ssh_server
+from tests.integration.fake_ssh import (
+    FakeTargetState,
+    disconnect_all,
+    start_fake_ssh_server,
+)
 from yubarta.config import AppConfig, LogWatch, TargetConfig
 from yubarta.diagnostics.runner import DiagnosticsRunner
 from yubarta.events.models import NormalizedEvent
@@ -16,7 +20,7 @@ from yubarta.rules.engine import RuleEngine
 from yubarta.scanners.remote_file import RemoteFileScanner
 
 
-async def test_ssh_reconnect_backfill_exactly_once(test_db):  # type: ignore[no-untyped-def]
+async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
     state = FakeTargetState(healthy=False)
     listener, ssh_port = await start_fake_ssh_server(state)
     engine = None
@@ -45,7 +49,9 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db):  # type: ignore[no-
             received.append(event)
             await service.handle_event(event)
 
-        scanner = RemoteFileScanner(name="reconnect", target=config.target, watch=config.watch[0])  # type: ignore[arg-type]
+        scanner = RemoteFileScanner(
+            name="reconnect", target=config.target, watch=config.watch[0]
+        )  # type: ignore[arg-type]
         await scanner.start(handler)
         await asyncio.sleep(1.0)
         assert scanner.status.connected

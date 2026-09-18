@@ -1,3 +1,5 @@
+"""E2E fixtures: Java sandbox and Yubarta process under test."""
+
 from __future__ import annotations
 
 import asyncio
@@ -5,7 +7,7 @@ import os
 import shutil
 import subprocess
 import uuid
-from collections.abc import AsyncIterator, Generator, Iterator
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
@@ -25,15 +27,11 @@ def java_image() -> Iterator[str]:
         yield image
     finally:
         # Removing the session tag keeps cached build layers for the next run.
-        subprocess.run(
-            ["docker", "image", "rm", image], capture_output=True, timeout=15
-        )
+        subprocess.run(["docker", "image", "rm", image], capture_output=True, timeout=15)
 
 
 @pytest.fixture
-async def java_target(
-    java_image: str, request: pytest.FixtureRequest
-) -> AsyncIterator[Sandbox]:
+async def java_target(java_image: str, request: pytest.FixtureRequest) -> AsyncIterator[Sandbox]:
     name = f"yubarta-e2e-{uuid.uuid4().hex[:12]}"
     target: Sandbox | None = None
     try:
@@ -72,7 +70,7 @@ async def product(
     executable = shutil.which("yubarta")
     if executable is None:
         pytest.fail('Install the product first: python -m pip install -e ".[dev]"')
-    config = Path(__file__).parent / "scenarios" / "java" / "config.yaml"
+    config = Path(__file__).resolve().parents[1] / "e2e" / "scenarios" / "java" / "config.yaml"
     environment = {
         **os.environ,
         "YUBARTA_E2E_SSH_PORT": str(java_target.ssh_port),
@@ -96,15 +94,11 @@ async def product(
         )
         instance = Product(process, log_path, apply)
         try:
-            instance.url = await eventually(
-                "Yubarta listening", instance.discover_url, bool
-            )
+            instance.url = await eventually("Yubarta listening", instance.discover_url, bool)
             await eventually(
                 "SSH scanner connected",
                 lambda: instance.get("/api/v1/scanners"),
-                lambda scanners: (
-                    len(scanners) == 1 and all(item["connected"] for item in scanners)
-                ),
+                lambda scanners: (len(scanners) == 1 and all(item["connected"] for item in scanners)),
             )
             yield instance
         finally:
@@ -117,29 +111,6 @@ async def product(
                     forced = True
                     process.kill()
                     await asyncio.to_thread(process.wait, timeout=5)
-            request.node.add_report_section(
-                "teardown", "Yubarta output", instance.logs()
-            )
-            request.node.add_report_section(
-                "teardown", "Control API", repr(instance.observations)
-            )
-            assert not forced, (
-                "Yubarta did not shut down within 10s; process was killed"
-            )
-
-
-@pytest.hookimpl(wrapper=True)
-def pytest_runtest_makereport(
-    item: pytest.Item, call: pytest.CallInfo[None]
-) -> Generator[None, pytest.TestReport, pytest.TestReport]:
-    report = yield
-    # Collect before fixture teardown so a failed call report includes evidence.
-    if report.failed and isinstance(item, pytest.Function):
-        instance = item.funcargs.get("product")
-        if isinstance(instance, Product):
-            report.sections.append(("Yubarta output", instance.logs()))
-            report.sections.append(("Control API", repr(instance.observations)))
-        target = item.funcargs.get("java_target")
-        if isinstance(target, Sandbox):
-            report.sections.append(("Java target", target.diagnostics()))
-    return report
+            request.node.add_report_section("teardown", "Yubarta output", instance.logs())
+            request.node.add_report_section("teardown", "Control API", repr(instance.observations))
+            assert not forced, "Yubarta did not shut down within 10s; process was killed"

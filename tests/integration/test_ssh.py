@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from tests.integration.fake_ssh import FakeTargetState, start_fake_ssh_server
+from tests.integration.fake_ssh import FakeTargetState
 from yubarta.config import CommandWatch, LogWatch, TargetConfig
 from yubarta.events.models import NormalizedEvent
 from yubarta.execution.ssh import AsyncSSHExecutor
@@ -12,31 +10,27 @@ from yubarta.scanners.remote_command import RemoteCommandScanner
 from yubarta.scanners.remote_file import RemoteFileScanner
 
 
-@pytest.fixture()
-async def ssh_target():  # type: ignore[no-untyped-def]
-    state = FakeTargetState(healthy=True)
-    state.log_lines.extend(["line one", "line two"])
-    listener, port = await start_fake_ssh_server(state)
-    yield state, port
-    listener.close()
-    await listener.wait_closed()
-
-
 def _target(port: int) -> TargetConfig:
     return TargetConfig(host="127.0.0.1", user="tester", key="", port=port)
 
 
-async def test_remote_command_execution(ssh_target):  # type: ignore[no-untyped-def]
+async def test_remote_command_execution(
+    ssh_target: tuple[FakeTargetState, int],
+) -> None:
     state, port = ssh_target
     executor = AsyncSSHExecutor(_target(port))
     result = await executor.run("uptime", timeout=10.0)
     assert result.exit_code == 0
     state.healthy = False
-    failed = await executor.run("sudo -n systemctl is-active --quiet tomcat9", timeout=10.0)
+    failed = await executor.run(
+        "sudo -n systemctl is-active --quiet tomcat9", timeout=10.0
+    )
     assert failed.exit_code == 3
 
 
-async def test_remote_file_streaming_backfill(ssh_target):  # type: ignore[no-untyped-def]
+async def test_remote_file_streaming_backfill(
+    ssh_target: tuple[FakeTargetState, int],
+) -> None:
     state, port = ssh_target
     received: list[NormalizedEvent] = []
 
@@ -59,7 +53,9 @@ async def test_remote_file_streaming_backfill(ssh_target):  # type: ignore[no-un
     assert received and "AH00957" in received[0].message
 
 
-async def test_command_scanner_detects_failure(ssh_target):  # type: ignore[no-untyped-def]
+async def test_command_scanner_detects_failure(
+    ssh_target: tuple[FakeTargetState, int],
+) -> None:
     state, port = ssh_target
     received: list[NormalizedEvent] = []
 
@@ -67,7 +63,9 @@ async def test_command_scanner_detects_failure(ssh_target):  # type: ignore[no-u
         received.append(event)
 
     state.healthy = False
-    watch = CommandWatch(run="sudo -n systemctl is-active --quiet tomcat9", interval="100ms")
+    watch = CommandWatch(
+        run="sudo -n systemctl is-active --quiet tomcat9", interval="100ms"
+    )
     scanner = RemoteCommandScanner(name="c", target=_target(port), watch=watch)
     await scanner.start(handler)
     try:

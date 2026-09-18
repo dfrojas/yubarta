@@ -9,7 +9,7 @@ from yubarta.config import AppConfig, LogWatch, TargetConfig
 from yubarta.runtime import YubartaRuntime
 
 
-async def test_graceful_shutdown(test_db):  # type: ignore[no-untyped-def]
+async def test_graceful_shutdown(test_db: str) -> None:
     state = FakeTargetState(healthy=True)
     listener, ssh_port = await start_fake_ssh_server(state)
     try:
@@ -22,7 +22,9 @@ async def test_graceful_shutdown(test_db):  # type: ignore[no-untyped-def]
         await runtime.start_scanners()
         await asyncio.sleep(0.5)
         await asyncio.wait_for(runtime.shutdown(), timeout=15.0)
-        assert all(not scanner.status.running for scanner in runtime.supervisor.scanners)
+        assert all(
+            not scanner.status.running for scanner in runtime.supervisor.scanners
+        )
         assert runtime.db_healthy is False
     finally:
         listener.close()
