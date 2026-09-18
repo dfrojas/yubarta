@@ -7,7 +7,7 @@ metadata:
   version: "1.0"
 ---
 
-Record one already-made, project-level decision as an ADR under `records/adr/`.
+Record one already-made, project-level decision as an ADR under `docs/records/adr/`.
 
 ## When to use this
 
@@ -45,7 +45,7 @@ Put the nuance ("plus fired_at, not fingerprint alone") in the Context/Decision 
 - `adr link SOURCE LINK TARGET REVERSE-LINK` — link two ADRs that relate without one replacing the other (e.g. `adr link 5 Amends 3 "Amended by"`). Use when a decision refines or depends on another without invalidating it.
 - `adr list` — list all ADRs in the directory.
 - `adr generate toc` / `adr generate graph` — generate a table of contents or a relationship graph across all ADRs; useful if the user wants an index, not needed for writing a single ADR.
-- `adr init [DIRECTORY]` — only for initializing a *new* ADR log from scratch. This project already has one (`records/adr/`, configured via `.adr-dir`); never run `adr init` here.
+- `adr init [DIRECTORY]` — only for initializing a *new* ADR log from scratch. This project already has one (`docs/records/adr/`, configured via `.adr-dir`); never run `adr init` here.
 
 ## Filling in the template
 
