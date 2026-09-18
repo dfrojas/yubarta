@@ -1,0 +1,67 @@
+#!/bin/bash
+# Manual lab only: control a real Tomcat JVM without requiring systemd.
+set -euo pipefail
+export CATALINA_HOME=/usr/local/tomcat
+export CATALINA_PID=/run/yubarta-tomcat/tomcat.pid
+export JAVA_HOME=/opt/java/openjdk
+
+healthy() {
+  curl --fail --silent --output /dev/null --max-time 2 http://127.0.0.1:8080/health
+}
+
+running() {
+  [[ -s "$CATALINA_PID" ]] && kill -0 "$(cat "$CATALINA_PID")" 2>/dev/null
+}
+
+catalina() {
+  runuser -u tomcat -- env JAVA_HOME="$JAVA_HOME" CATALINA_PID="$CATALINA_PID" \
+    "$CATALINA_HOME/bin/catalina.sh" "$@"
+}
+
+start() {
+  if running; then
+    healthy
+    return
+  fi
+  rm -f "$CATALINA_PID"
+  catalina start
+  for attempt in {1..30}; do
+    if healthy; then
+      echo "Tomcat ready, pid=$(cat "$CATALINA_PID")"
+      return
+    fi
+    sleep 0.5
+  done
+  echo "Tomcat did not become healthy; inspect $CATALINA_HOME/logs/catalina.out" >&2
+  return 1
+}
+
+stop() {
+  if running; then
+    catalina stop 5 -force
+  fi
+  rm -f "$CATALINA_PID"
+}
+
+case "${1:-}" in
+  start) start ;;
+  stop) stop ;;
+  restart) stop; start ;;
+  crash)
+    if ! running; then
+      echo "Tomcat is already stopped" >&2
+      exit 1
+    fi
+    kill -KILL "$(cat "$CATALINA_PID")"
+    echo "Tomcat killed; SSH and the container remain running"
+    ;;
+  status)
+    if healthy; then
+      echo active
+    else
+      echo inactive
+      exit 3
+    fi
+    ;;
+  *) echo "usage: tomcat-control {start|stop|restart|crash|status}" >&2; exit 2 ;;
+esac

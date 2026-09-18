@@ -1,0 +1,11 @@
+#!/bin/bash
+# ensure-swap (E2E): inspect memory/swap. Containers cannot swapon, so this
+# records the observation and succeeds; it never heals a dead JVM by itself.
+set -euo pipefail
+free -h || true
+if awk '/^SwapTotal:/ {exit !($2 > 0)}' /proc/meminfo 2>/dev/null; then
+  echo "swap present"
+else
+  echo "sandbox: no swap device available inside container; nothing to change"
+fi
+exit 0

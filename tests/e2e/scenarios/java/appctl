@@ -1,0 +1,64 @@
+#!/bin/bash
+# appctl: real lifecycle control for the E2E JVM. start/stop/restart/status.
+set -u
+PIDFILE="/run/yubarta-app/app.pid"
+LOGFILE="/var/log/yubarta-app/app.log"
+APPDIR="/srv/app"
+
+is_running() {
+  [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+}
+
+is_healthy() {
+  curl -fs -o /dev/null --max-time 2 http://127.0.0.1:8080/health 2>/dev/null
+}
+
+do_start() {
+  if is_running; then
+    echo "app already running pid=$(cat "$PIDFILE")"
+    return 0
+  fi
+  mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
+  nohup java -cp "$APPDIR" HelloApp >>"$LOGFILE" 2>&1 &
+  echo $! > "$PIDFILE"
+  for _ in $(seq 1 30); do
+    if is_healthy; then
+      echo "app started pid=$(cat "$PIDFILE")"
+      return 0
+    fi
+    sleep 1
+  done
+  echo "app failed to become healthy" >&2
+  return 1
+}
+
+do_stop() {
+  if ! is_running; then
+    rm -f "$PIDFILE"
+    echo "app already stopped"
+    return 0
+  fi
+  kill "$(cat "$PIDFILE")"
+  for _ in $(seq 1 15); do
+    is_running || break
+    sleep 1
+  done
+  is_running && kill -9 "$(cat "$PIDFILE")" 2>/dev/null || true
+  rm -f "$PIDFILE"
+  echo "app stopped"
+}
+
+case "${1:-}" in
+  start) do_start ;;
+  stop) do_stop ;;
+  restart) do_stop; do_start ;;
+  status)
+    if is_healthy; then
+      echo "active"
+      exit 0
+    fi
+    echo "inactive"
+    exit 3
+    ;;
+  *) echo "usage: appctl {start|stop|restart|status}" >&2; exit 2 ;;
+esac

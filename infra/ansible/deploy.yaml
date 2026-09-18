@@ -1,0 +1,77 @@
+---
+// Yubarta control host deployment.
+- name: Deploy Yubarta daemon
+  hosts: yubarta_control
+  become: true
+  vars:
+    yubarta_user: yubarta
+    yubarta_home: /opt/yubarta
+    yubarta_etc: /etc/yubarta
+  tasks:
+    - name: Create yubarta user
+      ansible.builtin.user:
+        name: "{{ yubarta_user }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ yubarta_user }}"
+        mode: "0755"
+      loop:
+        - "{{ yubarta_home }}"
+        - "{{ yubarta_etc }}"
+
+    - name: Install runtime dependencies
+      ansible.builtin.apt:
+        name: [python3, python3-venv, openssh-client]
+        state: present
+        update_cache: true
+
+    - name: Sync yubarta package
+      ansible.builtin.synchronize:
+        src: ../../
+        dest: "{{ yubarta_home }}/src"
+
+    - name: Create venv and install
+      ansible.builtin.pip:
+        name: "{{ yubarta_home }}/src"
+        virtualenv: "{{ yubarta_home }}/venv"
+        virtualenv_python: python3.12
+
+    - name: Install config
+      ansible.builtin.template:
+        src: config.yaml.j2
+        dest: "{{ yubarta_etc }}/config.yaml"
+        owner: "{{ yubarta_user }}"
+        mode: "0640"
+
+    - name: Install env file
+      ansible.builtin.copy:
+        dest: "{{ yubarta_etc }}/yubarta.env"
+        owner: "{{ yubarta_user }}"
+        mode: "0600"
+        content: |
+          YUBARTA_DATABASE_URL={{ yubarta_database_url }}
+          YUBARTA_SSH_HOST={{ yubarta_ssh_host }}
+
+    - name: Install systemd unit
+      ansible.builtin.copy:
+        src: ../systemd/yubarta.service
+        dest: /etc/systemd/system/yubarta.service
+        mode: "0644"
+      notify: Reload systemd
+
+    - name: Enable and start yubarta
+      ansible.builtin.systemd:
+        name: yubarta
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
