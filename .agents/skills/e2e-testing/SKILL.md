@@ -30,8 +30,9 @@ pytest and asyncio. Do not introduce Ginkgo or Kubernetes as dependencies.
 
 ## Fixtures and resources
 
-- Prefer typed pytest fixtures for shared setup. Keep lifecycle setup in
-  `conftest.py` and reusable waits/process helpers in focused helper modules.
+- Prefer typed pytest fixtures for shared setup. Keep E2E fixtures in
+  `tests/fixtures/e2e.py` (see the `pytest-fixtures` skill) and reusable
+  waits/process helpers in focused helper modules.
 - Build the target image once per test session. Use unique image/container names,
   OS-assigned loopback ports, temporary files, and a database per test.
 - Register cleanup immediately after acquiring each resource, including during

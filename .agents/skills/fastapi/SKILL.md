@@ -15,7 +15,7 @@ These rules come from the official FastAPI guide and from production experience.
 ## Versions
 
 - Put business routes under a version: `APIRouter(prefix="/api/v1", tags=[...])`.
-- Keep `/health` without a version and without auth. Orchestrators use it.
+- Keep `/healthz` without a version and without auth. Orchestrators use it.
 - Do not remove a path without a warning. Change the callers, or add a new version.
 
 ## App factory and life cycle
@@ -74,7 +74,7 @@ These rules come from the official FastAPI guide and from production experience.
 ## Tests
 
 - Use `httpx.AsyncClient` with `ASGITransport(app=app)` to test routes.
-- Test auth: `/health` is open; no token or a bad token gives 401; a good token gives 200. Also test the start with a missing secret.
+- Test auth: `/healthz` is open; no token or a bad token gives 401; a good token gives 200. Also test the start with a missing secret.
 - Use fixtures, not helper functions. Put the tests in `tests/unit` and `tests/integration`.
 
 ## Tools

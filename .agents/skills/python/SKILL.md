@@ -33,8 +33,9 @@ Apply to everything under `tests/`.
 
 - **pytest**, not unittest-style classes.
 - **Prefer fixtures over ad-hoc helper functions** for anything reused across tests.
-- **`conftest.py` is the config/fixture file** for a directory's shared setup, not a dumping ground.
+- **Fixture structure lives in the `pytest-fixtures` skill.** Shared fixtures go in `tests/fixtures/<domain>.py` with a `pytest_plugins` registry in `tests/conftest.py`, not in test modules or `conftest.py` bodies.
 - **Folder layout mirrors use cases**, not implementation modules. `tests/unit/` and `tests/integration/` split by what's being verified, matching the project's existing layout.
+
 ## Design
 
 - **Pydantic models for every request and response schema.** No raw dicts crossing the route boundary.
