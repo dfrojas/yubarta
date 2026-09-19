@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from yubarta.events.models import NormalizedEvent
-from yubarta.parsing.multiline import MultilineAggregator
-from yubarta.parsing.parsers import matches_all, matches_any, parse_line
-from yubarta.rules.engine import Rule, RuleEngine
+from yubarta.controllers.scanners.parsing.multiline import MultilineAggregator
+from yubarta.controllers.scanners.parsing.parsers import matches_all, matches_any, parse_line
+from yubarta.core.models import NormalizedEvent
+from yubarta.core.rules import Rule, RuleEngine
 
 
 def test_parse_plain_and_level():  # type: ignore[no-untyped-def]

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from yubarta.config import (
+from functools import partial
+
+import httpx
+
+from yubarta.config.settings import (
     AppConfig,
     CommandCheck,
     LogWatch,
@@ -10,13 +14,17 @@ from yubarta.config import (
     TargetConfig,
     VerifyConfig,
 )
-from yubarta.diagnostics.runner import DiagnosticsRunner
-from yubarta.events.models import NormalizedEvent
-from yubarta.execution.ssh import CommandResult
-from yubarta.incidents.service import IncidentService
-from yubarta.persistence.repository import IncidentRepository
-from yubarta.persistence.session import create_engine, create_session_factory, init_db
-from yubarta.rules.engine import RuleEngine
+from yubarta.controllers.checks import ChecksRunner
+from yubarta.controllers.diagnostics import DiagnosticsRunner
+from yubarta.controllers.incidents import IncidentService
+from yubarta.controllers.remediations.runner import RemediationRunner
+from yubarta.core.models import CommandResult, NormalizedEvent
+from yubarta.core.rules import RuleEngine
+from yubarta.drivers.db.initialization import init_db
+from yubarta.drivers.db.repository import SqlAlchemyIncidentRepository as IncidentRepository
+from yubarta.drivers.db.sessions import create_engine, create_session_factory
+from yubarta.drivers.db.sqlalchemy import SqlAlchemyUnitOfWork
+from yubarta.drivers.network.http import HttpChecks
 
 
 class _RecordingExecutor:
@@ -45,13 +53,14 @@ async def test_dry_run_skips_remediations(test_db: str) -> None:
         remediations=[RemediationDef(name="restart-tomcat", command="sudo -n systemctl restart tomcat9")],
         verify=VerifyConfig(settle_delay=0.0, interval=0.01, timeout=0.2),
     )
+    http_client = httpx.AsyncClient()
     service = IncidentService(
         config,
-        sessions,
+        partial(SqlAlchemyUnitOfWork, sessions),
         RuleEngine.from_watches(config.watch),
-        recorder,
         DiagnosticsRunner(recorder, config.diagnostics),
-        apply=False,
+        ChecksRunner(config.checks, recorder, HttpChecks(http_client)),
+        RemediationRunner(recorder, apply=False),
     )
     event = NormalizedEvent(source="log:/x.log", target="vm", message="AH00957 fail", raw="x")
     await service.handle_event(event)
@@ -65,3 +74,4 @@ async def test_dry_run_skips_remediations(test_db: str) -> None:
         remediation_steps = [step for step in steps if step.kind == "remediation"]
         assert remediation_steps and all(step.state == "SKIPPED" for step in remediation_steps)
     await engine.dispose()
+    await http_client.aclose()

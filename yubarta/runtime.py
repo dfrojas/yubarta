@@ -3,31 +3,38 @@
 from __future__ import annotations
 
 import time
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
+from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
+from functools import partial
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from yubarta.config import AppConfig
-from yubarta.diagnostics.runner import DiagnosticsRunner
-from yubarta.events.models import NormalizedEvent
-from yubarta.execution.ssh import AsyncSSHExecutor
-from yubarta.incidents.service import IncidentService
-from yubarta.persistence.session import create_engine, create_session_factory, init_db, resolve_database_url
-from yubarta.rules.engine import RuleEngine
-from yubarta.scanners.supervisor import ScannerSupervisor
+from yubarta.config.settings import AppConfig, LogWatch
+from yubarta.controllers.checks import ChecksRunner
+from yubarta.controllers.diagnostics import DiagnosticsRunner
+from yubarta.controllers.incidents import IncidentService
+from yubarta.controllers.remediations.runner import RemediationRunner
+from yubarta.controllers.scanners.contracts import Scanner
+from yubarta.controllers.scanners.remote_command import RemoteCommandScanner
+from yubarta.controllers.scanners.remote_file import RemoteFileScanner
+from yubarta.controllers.scanners.supervisor import ScannerSupervisor
+from yubarta.core.models import NormalizedEvent
+from yubarta.core.rules import RuleEngine
+from yubarta.drivers.db.initialization import init_db
+from yubarta.drivers.db.sessions import create_engine, create_session_factory, resolve_database_url
+from yubarta.drivers.db.sqlalchemy import SqlAlchemyUnitOfWork
+from yubarta.drivers.network.files import SSHFileSource
+from yubarta.drivers.network.http import HttpChecks
+from yubarta.drivers.network.ssh import AsyncSSHExecutor, SSHCommandSource
 
 
 @dataclass
 class RuntimeServices:
-    """Domain services owned by the runtime.
-
-    Grouped so construction (and a future shutdown) stays in one place as the
-    set grows. Add a field here, then wire it in YubartaRuntime._build_services.
-    """
+    """Application services constructed together at the composition root."""
 
     incidents: IncidentService
-    # diagnosis: DiagnosisService   # example: uncomment when the second service lands
 
 
 class YubartaRuntime:
@@ -36,7 +43,7 @@ class YubartaRuntime:
         config: AppConfig,
         apply: bool = False,
         database_url: str = "",
-        engine_options: dict | None = None,
+        engine_options: dict[str, object] | None = None,
     ) -> None:
         self._config = config
         self._apply = apply
@@ -44,7 +51,9 @@ class YubartaRuntime:
         self._engine_options = engine_options or {}
         self._engine: AsyncEngine | None = None
         self._sessions: async_sessionmaker[AsyncSession] | None = None
-        self._supervisor = ScannerSupervisor(config)
+        self._supervisor = ScannerSupervisor([])
+        self._resources = AsyncExitStack()
+        self._http_client: httpx.AsyncClient | None = None
         self._services: RuntimeServices | None = None
         self._started_at = time.monotonic()
         self._db_healthy = False
@@ -82,24 +91,55 @@ class YubartaRuntime:
         return self._sessions
 
     async def setup(self) -> None:
-        self._engine = create_engine(self._database_url, **self._engine_options)
-        await init_db(self._engine)
-        self._db_healthy = True
-        self._sessions = create_session_factory(self._engine)
-        self._services = self._build_services()
+        if self._engine is not None:
+            raise RuntimeError("Runtime is already set up")
+        try:
+            self._engine = create_engine(self._database_url, **self._engine_options)
+            self._resources.push_async_callback(self._engine.dispose)
+            await init_db(self._engine)
+            self._sessions = create_session_factory(self._engine)
+            self._http_client = await self._resources.enter_async_context(httpx.AsyncClient())
+            self._services = self._build_services()
+            scanners: list[Scanner] = []
+            for index, watch in enumerate(self._config.watch):
+                if isinstance(watch, LogWatch):
+                    scanners.append(
+                        RemoteFileScanner(
+                            name=f"log-{index}:{watch.file}",
+                            target=self._config.target.host,
+                            watch=watch,
+                            source=SSHFileSource(self._config.target),
+                        )
+                    )
+                else:
+                    scanners.append(
+                        RemoteCommandScanner(
+                            name=f"command-{index}:{watch.run}",
+                            target=self._config.target.host,
+                            watch=watch,
+                            source=SSHCommandSource(self._config.target),
+                        )
+                    )
+            self._supervisor = ScannerSupervisor(scanners)
+            self._resources.push_async_callback(self._supervisor.stop)
+            self._started_at = time.monotonic()
+            self._db_healthy = True
+        except BaseException:
+            await self.shutdown()
+            raise
 
     def _build_services(self) -> RuntimeServices:
-        if self._sessions is None:
+        if self._sessions is None or self._http_client is None:
             raise RuntimeError("Runtime not set up")
         executor = AsyncSSHExecutor(self._config.target)
         return RuntimeServices(
             incidents=IncidentService(
                 self._config,
-                self._sessions,
+                partial(SqlAlchemyUnitOfWork, self._sessions),
                 RuleEngine.from_watches(self._config.watch),
-                executor,
                 DiagnosticsRunner(executor, self._config.diagnostics),
-                self._apply,
+                ChecksRunner(self._config.checks, executor, HttpChecks(self._http_client)),
+                RemediationRunner(executor, self._apply),
             ),
         )
 
@@ -112,17 +152,20 @@ class YubartaRuntime:
         await self._supervisor.start(_handler)
 
     async def shutdown(self) -> None:
-        await self._supervisor.stop()
-        if self._engine is not None:
-            await self._engine.dispose()
+        try:
+            await self._resources.aclose()
+        finally:
             self._engine = None
-        self._db_healthy = False
+            self._sessions = None
+            self._http_client = None
+            self._services = None
+            self._db_healthy = False
 
     @asynccontextmanager
-    async def lifespan(self):  # type: ignore[no-untyped-def]
-        await self.setup()
-        await self.start_scanners()
+    async def lifespan(self) -> AsyncIterator[YubartaRuntime]:
         try:
+            await self.setup()
+            await self.start_scanners()
             yield self
         finally:
             await self.shutdown()

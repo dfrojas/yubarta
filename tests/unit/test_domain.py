@@ -7,12 +7,13 @@ from datetime import UTC
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from yubarta.checks.runner import run_check
-from yubarta.config import CommandCheck
-from yubarta.execution.ssh import CommandResult
-from yubarta.incidents.errors import ConcurrentModificationError, InvalidTransitionError
-from yubarta.incidents.state_machine import IncidentState, transition
-from yubarta.persistence.repository import IncidentRepository
+from yubarta.config.settings import CommandCheck
+from yubarta.controllers.checks import run_check
+from yubarta.core.enums import IncidentState
+from yubarta.core.errors import ConcurrentModificationError, InvalidTransitionError
+from yubarta.core.models import CommandResult
+from yubarta.core.state_machine import transition
+from yubarta.drivers.db.repository import SqlAlchemyIncidentRepository as IncidentRepository
 
 
 def test_valid_lifecycle() -> None:
@@ -56,7 +57,7 @@ async def test_occ_conflict(session_factory: async_sessionmaker[AsyncSession]) -
 async def test_duplicate_events_no_duplicate_incident(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
-    from yubarta.events.models import NormalizedEvent
+    from yubarta.core.models import NormalizedEvent
 
     async with session_factory() as session:
         repo = IncidentRepository(session)
@@ -86,7 +87,7 @@ async def test_check_expectations_command() -> None:
 
 
 async def test_remediation_sequencing_order_preserved() -> None:
-    from yubarta.config import RemediationDef
+    from yubarta.config.settings import RemediationDef
 
     defs = [RemediationDef(name=name, command=cmd) for name, cmd in [("a", "x"), ("b", "y"), ("c", "z")]]
     assert [item.name for item in defs] == ["a", "b", "c"]
@@ -95,7 +96,7 @@ async def test_remediation_sequencing_order_preserved() -> None:
 def test_api_response_models() -> None:
     from datetime import datetime
 
-    from yubarta.api import HealthResponse, IncidentSummary
+    from yubarta.entrypoints.api_server import HealthResponse, IncidentSummary
 
     now = datetime.now(UTC)
     assert HealthResponse(ok=True, time=now).ok

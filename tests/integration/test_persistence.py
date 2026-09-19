@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from yubarta.events.models import NormalizedEvent
-from yubarta.incidents.models import StepKind, StepState
-from yubarta.incidents.state_machine import IncidentState
-from yubarta.persistence.repository import IncidentRepository
+from yubarta.core.enums import IncidentState, StepKind, StepState
+from yubarta.core.models import NormalizedEvent
+from yubarta.drivers.db.repository import SqlAlchemyIncidentRepository as IncidentRepository
 
 
 async def test_full_persistence_lifecycle(

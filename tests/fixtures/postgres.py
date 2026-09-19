@@ -17,7 +17,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tests.fixtures.ports import free_port
-from yubarta.persistence.session import create_engine, create_session_factory
+from yubarta.drivers.db.sessions import create_engine, create_session_factory
 
 ROOT = Path(__file__).resolve().parents[2]
 _DB_NAME_PATTERN = re.compile(r"^[a-z0-9_]+$")

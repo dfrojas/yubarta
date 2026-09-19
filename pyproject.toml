@@ -69,3 +69,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["yubarta*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"yubarta.controllers.remediations" = ["scripts/*"]

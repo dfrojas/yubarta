@@ -1,4 +1,4 @@
-"""Alembic environment: autogenerate from yubarta.persistence.models.Base."""
+"""Alembic environment: autogenerate from yubarta.drivers.db.orm.Base."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine
 
 from alembic import context
-from yubarta.persistence.models import Base
+from yubarta.drivers.db.orm import Base
 
 config = context.config
 if config.config_file_name is not None:

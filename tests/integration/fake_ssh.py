@@ -16,6 +16,7 @@ class FakeTargetState:
     command_routes: dict[str, tuple[int, str]] = field(default_factory=dict)
     _subscribers: list[asyncio.Queue[str]] = field(default_factory=list, repr=False)
     _processes: list = field(default_factory=list, repr=False)
+    _handlers: set[asyncio.Task] = field(default_factory=set, repr=False)
 
     def append_log(self, line: str) -> None:
         self.log_lines.append(line)
@@ -60,12 +61,23 @@ class _AllowServer(asyncssh.SSHServer):
 def make_process_handler(state: FakeTargetState):  # type: ignore[no-untyped-def]
     async def handle(process: asyncssh.SSHServerProcess) -> None:
         state._processes.append(process)
+        current = asyncio.current_task()
+        assert current is not None
+        state._handlers.add(current)
         command = (process.command or "").strip()
+        serving = asyncio.create_task(_serve(process, state, command))
+        closed = asyncio.create_task(process.wait_closed())
         try:
-            await _serve(process, state, command)
+            done, _ = await asyncio.wait((serving, closed), return_when=asyncio.FIRST_COMPLETED)
+            if serving in done:
+                await serving
         finally:
+            serving.cancel()
+            closed.cancel()
+            await asyncio.gather(serving, closed, return_exceptions=True)
             if process in state._processes:
                 state._processes.remove(process)
+            state._handlers.discard(current)
 
     async def _serve(process: asyncssh.SSHServerProcess, state: FakeTargetState, command: str) -> None:
         tail_match = re.match(r"tail\s+-n\s+(\d+)\s+(-F\s+)?(\S+)", command)
@@ -97,8 +109,6 @@ def make_process_handler(state: FakeTargetState):  # type: ignore[no-untyped-def
                         return
                     if process.is_closing():
                         return
-            except asyncio.CancelledError:
-                return
             finally:
                 if queue in state._subscribers:
                     state._subscribers.remove(queue)
@@ -135,7 +145,12 @@ async def start_fake_ssh_server(state: FakeTargetState, port: int = 0):  # type:
 def disconnect_all(state: FakeTargetState) -> None:
     """Abort all established server-side channels, simulating a dropped connection."""
     for process in list(state._processes):
-        try:
-            process.channel.abort()
-        except Exception:
-            pass
+        process.channel.abort()
+
+
+async def close_fake_ssh_server(listener: asyncssh.SSHAcceptor, state: FakeTargetState) -> None:
+    listener.close()
+    disconnect_all(state)
+    await asyncio.wait_for(listener.wait_closed(), timeout=5.0)
+    if state._handlers:
+        await asyncio.wait_for(asyncio.gather(*tuple(state._handlers)), timeout=5.0)

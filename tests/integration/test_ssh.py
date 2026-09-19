@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from tests.integration.fake_ssh import FakeTargetState
-from yubarta.config import CommandWatch, LogWatch, TargetConfig
-from yubarta.events.models import NormalizedEvent
-from yubarta.execution.ssh import AsyncSSHExecutor
-from yubarta.scanners.remote_command import RemoteCommandScanner
-from yubarta.scanners.remote_file import RemoteFileScanner
+from yubarta.config.settings import CommandWatch, LogWatch, TargetConfig
+from yubarta.controllers.scanners.remote_command import RemoteCommandScanner
+from yubarta.controllers.scanners.remote_file import RemoteFileScanner
+from yubarta.core.models import NormalizedEvent
+from yubarta.drivers.network.files import SSHFileSource
+from yubarta.drivers.network.ssh import AsyncSSHExecutor, SSHCommandSource
 
 
 def _target(port: int) -> TargetConfig:
@@ -36,7 +37,7 @@ async def test_remote_file_streaming_backfill(
         received.append(event)
 
     watch = LogWatch(file="/var/log/apache2/error.log", match_any=["AH00957"])
-    scanner = RemoteFileScanner(name="t", target=_target(port), watch=watch)
+    scanner = RemoteFileScanner(name="t", target="127.0.0.1", watch=watch, source=SSHFileSource(_target(port)))
     state.append_log("AH00957: AJP Connection refused")
     await scanner.start(handler)
     try:
@@ -61,8 +62,8 @@ async def test_command_scanner_detects_failure(
         received.append(event)
 
     state.healthy = False
-    watch = CommandWatch(run="sudo -n systemctl is-active --quiet tomcat9", interval="100ms")
-    scanner = RemoteCommandScanner(name="c", target=_target(port), watch=watch)
+    watch = CommandWatch(run="sudo -n systemctl is-active --quiet tomcat9", interval=0.1)
+    scanner = RemoteCommandScanner(name="c", target="127.0.0.1", watch=watch, source=SSHCommandSource(_target(port)))
     await scanner.start(handler)
     try:
         import asyncio

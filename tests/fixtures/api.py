@@ -14,8 +14,8 @@ from fastapi import FastAPI
 from sqlalchemy.pool import NullPool
 
 from tests.fixtures.ports import free_port
-from yubarta.api import create_app
-from yubarta.config import ApiConfig, AppConfig, TargetConfig
+from yubarta.config.settings import ApiConfig, AppConfig, TargetConfig
+from yubarta.entrypoints.api_server import create_app
 from yubarta.runtime import YubartaRuntime
 
 TOKEN = "s3cret-token"

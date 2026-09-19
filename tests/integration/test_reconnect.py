@@ -3,21 +3,31 @@
 from __future__ import annotations
 
 import asyncio
+from functools import partial
+
+import httpx
 
 from tests.integration.fake_ssh import (
     FakeTargetState,
+    close_fake_ssh_server,
     disconnect_all,
     start_fake_ssh_server,
 )
-from yubarta.config import AppConfig, LogWatch, TargetConfig
-from yubarta.diagnostics.runner import DiagnosticsRunner
-from yubarta.events.models import NormalizedEvent
-from yubarta.execution.ssh import AsyncSSHExecutor
-from yubarta.incidents.service import IncidentService
-from yubarta.persistence.repository import IncidentRepository
-from yubarta.persistence.session import create_engine, create_session_factory, init_db
-from yubarta.rules.engine import RuleEngine
-from yubarta.scanners.remote_file import RemoteFileScanner
+from yubarta.config.settings import AppConfig, LogWatch, TargetConfig
+from yubarta.controllers.checks import ChecksRunner
+from yubarta.controllers.diagnostics import DiagnosticsRunner
+from yubarta.controllers.incidents import IncidentService
+from yubarta.controllers.remediations.runner import RemediationRunner
+from yubarta.controllers.scanners.remote_file import RemoteFileScanner
+from yubarta.core.models import NormalizedEvent
+from yubarta.core.rules import RuleEngine
+from yubarta.drivers.db.initialization import init_db
+from yubarta.drivers.db.repository import SqlAlchemyIncidentRepository as IncidentRepository
+from yubarta.drivers.db.sessions import create_engine, create_session_factory
+from yubarta.drivers.db.sqlalchemy import SqlAlchemyUnitOfWork
+from yubarta.drivers.network.files import SSHFileSource
+from yubarta.drivers.network.http import HttpChecks
+from yubarta.drivers.network.ssh import AsyncSSHExecutor
 
 
 async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
@@ -25,6 +35,7 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
     listener, ssh_port = await start_fake_ssh_server(state)
     engine = None
     scanner = None
+    http_client = httpx.AsyncClient()
     try:
         url = test_db
         engine = create_engine(url)
@@ -37,11 +48,11 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
         executor = AsyncSSHExecutor(config.target)
         service = IncidentService(
             config,
-            sessions,
+            partial(SqlAlchemyUnitOfWork, sessions),
             RuleEngine.from_watches(config.watch),
-            executor,
             DiagnosticsRunner(executor, config.diagnostics),
-            apply=False,
+            ChecksRunner(config.checks, executor, HttpChecks(http_client)),
+            RemediationRunner(executor, apply=False),
         )
         received: list[NormalizedEvent] = []
 
@@ -49,7 +60,9 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
             received.append(event)
             await service.handle_event(event)
 
-        scanner = RemoteFileScanner(name="reconnect", target=config.target, watch=config.watch[0])  # type: ignore[arg-type]
+        scanner = RemoteFileScanner(
+            name="reconnect", target=config.target.host, watch=config.watch[0], source=SSHFileSource(config.target)
+        )
         await scanner.start(handler)
         await asyncio.sleep(1.0)
         assert scanner.status.connected
@@ -74,13 +87,9 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
             assert len(events) == 1
         assert scanner.status.reconnect_count >= 1
     finally:
+        await http_client.aclose()
         if scanner is not None:
             await scanner.stop()
-        disconnect_all(state)
-        listener.close()
-        try:
-            await asyncio.wait_for(listener.wait_closed(), timeout=10.0)
-        except TimeoutError:
-            pass
+        await close_fake_ssh_server(listener, state)
         if engine is not None:
             await engine.dispose()

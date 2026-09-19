@@ -24,7 +24,7 @@ async def test_status_scanners_incidents(server_url: str) -> None:
 def test_cli_uses_http_not_postgres(server_url: str) -> None:
     from typer.testing import CliRunner
 
-    from yubarta.cli import app as cli_app
+    from yubarta.entrypoints.cli.launcher import app as cli_app
 
     runner = CliRunner()
     result = runner.invoke(cli_app, ["health", "--server", server_url])

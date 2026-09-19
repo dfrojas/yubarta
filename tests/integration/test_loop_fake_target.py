@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import threading
+from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from tests.integration.fake_ssh import FakeTargetState, start_fake_ssh_server
-from yubarta.config import (
+import httpx
+
+from tests.integration.fake_ssh import FakeTargetState, close_fake_ssh_server, start_fake_ssh_server
+from yubarta.config.settings import (
     AppConfig,
     CommandCheck,
     HttpCheck,
@@ -16,13 +19,19 @@ from yubarta.config import (
     TargetConfig,
     VerifyConfig,
 )
-from yubarta.diagnostics.runner import DiagnosticsRunner
-from yubarta.execution.ssh import AsyncSSHExecutor
-from yubarta.incidents.service import IncidentService
-from yubarta.persistence.repository import IncidentRepository
-from yubarta.persistence.session import create_engine, create_session_factory, init_db
-from yubarta.rules.engine import RuleEngine
-from yubarta.scanners.remote_file import RemoteFileScanner
+from yubarta.controllers.checks import ChecksRunner
+from yubarta.controllers.diagnostics import DiagnosticsRunner
+from yubarta.controllers.incidents import IncidentService
+from yubarta.controllers.remediations.runner import RemediationRunner
+from yubarta.controllers.scanners.remote_file import RemoteFileScanner
+from yubarta.core.rules import RuleEngine
+from yubarta.drivers.db.initialization import init_db
+from yubarta.drivers.db.repository import SqlAlchemyIncidentRepository as IncidentRepository
+from yubarta.drivers.db.sessions import create_engine, create_session_factory
+from yubarta.drivers.db.sqlalchemy import SqlAlchemyUnitOfWork
+from yubarta.drivers.network.files import SSHFileSource
+from yubarta.drivers.network.http import HttpChecks
+from yubarta.drivers.network.ssh import AsyncSSHExecutor
 
 
 def _health_server(state: FakeTargetState) -> HTTPServer:
@@ -48,6 +57,7 @@ async def test_remediation_loop_fake_target(test_db: str) -> None:
     listener, ssh_port = await start_fake_ssh_server(state)
     http_server = _health_server(state)
     http_url = f"http://127.0.0.1:{http_server.server_port}/health"
+    http_client = httpx.AsyncClient()
     try:
         url = test_db
         engine = create_engine(url)
@@ -79,17 +89,19 @@ async def test_remediation_loop_fake_target(test_db: str) -> None:
         executor = AsyncSSHExecutor(config.target)
         service = IncidentService(
             config,
-            sessions,
+            partial(SqlAlchemyUnitOfWork, sessions),
             RuleEngine.from_watches(config.watch),
-            executor,
             DiagnosticsRunner(executor, config.diagnostics),
-            apply=True,
+            ChecksRunner(config.checks, executor, HttpChecks(http_client)),
+            RemediationRunner(executor, apply=True),
         )
 
         # 1-2: healthy at start
         assert state.healthy is True
 
-        scanner = RemoteFileScanner(name="e2e-log", target=config.target, watch=config.watch[0])  # type: ignore[arg-type]
+        scanner = RemoteFileScanner(
+            name="e2e-log", target=config.target.host, watch=config.watch[0], source=SSHFileSource(config.target)
+        )
         await scanner.start(service.handle_event)
         try:
             # 3-5: inject failure + Apache-like log
@@ -136,6 +148,6 @@ async def test_remediation_loop_fake_target(test_db: str) -> None:
             await scanner.stop()
         await engine.dispose()
     finally:
-        listener.close()
-        await listener.wait_closed()
+        await http_client.aclose()
+        await close_fake_ssh_server(listener, state)
         http_server.shutdown()
