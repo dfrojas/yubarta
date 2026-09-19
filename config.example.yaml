@@ -1,0 +1,58 @@
+target:
+  host: ${YUBARTA_SSH_HOST}
+  user: ${YUBARTA_SSH_USER}
+  key: ${YUBARTA_SSH_KEY_PATH}
+
+watch:
+  - log:
+      file: /var/log/apache2/error.log
+      match_any:
+        - "AH00957"
+        - "AJP"
+        - "Connection refused"
+
+  - command:
+      run: sudo -n systemctl is-failed tomcat9
+      interval: 30s
+      expect:
+        exit_code: 0
+
+diagnostics:
+  - uptime
+  - df -h /
+  - free -h
+  - sudo -n pg_lsclusters
+  - sudo -n systemctl status tomcat9 --no-pager -l
+  - sudo -n systemctl cat tomcat9.service
+  - sudo -n journalctl -k --no-pager | grep -i "killed process"
+  - sudo -n grep -i "ajp\\|proxy" /var/log/apache2/error.log | tail -30
+  - grep -i xmx /etc/default/tomcat9
+  - sudo -n grep shared_buffers /etc/postgresql/14/main/postgresql.conf
+
+checks:
+  - run: sudo -n systemctl is-active --quiet tomcat9
+    expect:
+      exit_code: 0
+
+  - http: ${YUBARTA_HEALTH_URL}
+    expect:
+      status: 200
+
+remediations:
+  - name: ensure-swap
+    command: /opt/yubarta/ensure-swap
+
+  - name: fix-restart-policy
+    command: /opt/yubarta/fix-tomcat-restart-policy
+
+  - name: restart-tomcat
+    command: sudo -n systemctl restart tomcat9
+
+verify:
+  settle_delay: 5s
+  interval: 5s
+  timeout: 120s
+
+api:
+  host: 127.0.0.1
+  port: 8787

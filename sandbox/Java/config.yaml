@@ -1,0 +1,44 @@
+# Run from the repository root after sourcing sandbox/Java/local.env.
+target:
+  host: 127.0.0.1
+  port: ${YUBARTA_JAVA_SSH_PORT}
+  user: yubarta
+  password_from_env: YUBARTA_JAVA_SSH_PASSWORD
+
+# A real health check detects the failure. No synthetic AJP log is needed.
+watch:
+  - command:
+      run: sudo -n /usr/local/bin/tomcat-control status
+      interval: 3s
+      expect_exit_code: 0
+      incident_type: tomcat-unavailable
+
+diagnostics:
+  - uptime
+  - free -h
+  - df -h /
+  - ps -eo pid,user,args
+  - sudo -n /usr/bin/tail -n 60 /usr/local/tomcat/logs/catalina.out
+
+checks:
+  - run: sudo -n /usr/local/bin/tomcat-control status
+    expect:
+      exit_code: 0
+  - http: http://127.0.0.1:${YUBARTA_JAVA_HTTP_PORT}/health
+    timeout: 2
+    expect:
+      status: 200
+
+remediations:
+  - name: restart-tomcat
+    command: sudo -n /usr/local/bin/tomcat-control restart
+
+verify:
+  settle_delay: 1s
+  interval: 1s
+  timeout: 30s
+
+database_url: postgresql+asyncpg://yubarta:yubarta@127.0.0.1:${YUBARTA_JAVA_DB_PORT}/yubarta
+api:
+  host: 127.0.0.1
+  port: ${YUBARTA_JAVA_API_PORT}

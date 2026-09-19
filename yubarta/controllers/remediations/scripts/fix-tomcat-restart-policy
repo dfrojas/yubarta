@@ -1,0 +1,14 @@
+#!/bin/bash
+# fix-tomcat-restart-policy: systemd drop-in with Restart=on-failure, RestartSec=10s. Idempotent.
+set -euo pipefail
+UNIT="${YUBARTA_TOMCAT_UNIT:-tomcat9}"
+DROPIN_DIR="/etc/systemd/system/${UNIT}.service.d"
+DROPIN_FILE="${DROPIN_DIR}/10-yubarta-restart.conf"
+mkdir -p "$DROPIN_DIR"
+cat > "$DROPIN_FILE" <<'EOF'
+[Service]
+Restart=on-failure
+RestartSec=10s
+EOF
+systemctl daemon-reload || true
+echo "restart policy ensured for $UNIT via $DROPIN_FILE"

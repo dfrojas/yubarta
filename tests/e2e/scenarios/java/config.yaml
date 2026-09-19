@@ -1,0 +1,44 @@
+target:
+  host: 127.0.0.1
+  port: ${YUBARTA_E2E_SSH_PORT}
+  user: yubarta
+  password_from_env: YUBARTA_E2E_SSH_PASSWORD
+
+# Synthetic Apache-like input exercises log ingestion, not Apache or Tomcat.
+watch:
+  - log:
+      file: /var/log/apache2/error.log
+      match_any: [AH00957, AJP, Connection refused]
+      incident_type: java-unavailable
+
+diagnostics:
+  - uptime
+  - free -h
+  - sudo -n /usr/local/bin/appctl status
+
+checks:
+  - run: sudo -n /usr/local/bin/appctl status
+    expect:
+      exit_code: 0
+  - http: ${YUBARTA_E2E_HEALTH_URL}
+    timeout: 1
+    expect:
+      status: 200
+
+remediations:
+  - name: ensure-swap
+    command: sudo -n /opt/yubarta/ensure-swap
+  - name: fix-restart-policy
+    command: sudo -n /opt/yubarta/fix-tomcat-restart-policy
+  - name: restart-app
+    command: sudo -n /opt/yubarta/restart-app
+
+verify:
+  settle_delay: 100ms
+  interval: 200ms
+  timeout: 1s
+
+database_url: ${YUBARTA_E2E_DATABASE_URL}
+api:
+  host: 127.0.0.1
+  port: 0

@@ -1,0 +1,20 @@
+[Unit]
+Description=Yubarta autonomous remediation agent
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=yubarta
+Group=yubarta
+EnvironmentFile=/etc/yubarta/yubarta.env
+ExecStart=/opt/yubarta/venv/bin/yubarta serve --config /etc/yubarta/config.yaml --apply
+Restart=on-failure
+RestartSec=10s
+KillSignal=SIGTERM
+TimeoutStopSec=60
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

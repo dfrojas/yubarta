@@ -1,0 +1,22 @@
+#!/bin/bash
+# ensure-swap: idempotent ~2GB swap. Inspect first, never blindly overwrite.
+set -euo pipefail
+SWAPFILE="${YUBARTA_SWAPFILE:-/swapfile}"
+SIZE_MB="${YUBARTA_SWAP_SIZE_MB:-2048}"
+
+existing_kb=$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+if [ "${existing_kb:-0}" -ge $((1900 * 1024)) ]; then
+  echo "swap already present: ${existing_kb} kB"
+  exit 0
+fi
+if [ -f "$SWAPFILE" ]; then
+  echo "swapfile exists but inactive; enabling"
+  swapon "$SWAPFILE" || true
+  exit 0
+fi
+fallocate -l "${SIZE_MB}M" "$SWAPFILE" || dd if=/dev/zero of="$SWAPFILE" bs=1M count="$SIZE_MB"
+chmod 600 "$SWAPFILE"
+mkswap "$SWAPFILE"
+swapon "$SWAPFILE"
+grep -q "$SWAPFILE" /etc/fstab 2>/dev/null || echo "$SWAPFILE none swap sw 0 0" >> /etc/fstab
+echo "swap ensured: ${SIZE_MB}M at $SWAPFILE"
