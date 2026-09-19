@@ -12,7 +12,9 @@ from yubarta.execution.ssh import SSHConnectionFactory
 
 
 class CheckOutcome:
-    def __init__(self, name: str, passed: bool, detail: str, exit_code: int | None = None, status: int | None = None) -> None:
+    def __init__(
+        self, name: str, passed: bool, detail: str, exit_code: int | None = None, status: int | None = None
+    ) -> None:
         self.name = name
         self.passed = passed
         self.detail = detail

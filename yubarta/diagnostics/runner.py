@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from yubarta.execution.ssh import CommandResult, SSHConnectionFactory
 from yubarta.incidents.models import StepKind
@@ -27,9 +27,7 @@ class DiagnosticsRunner:
         for command in self._commands:
             try:
                 outcome: CommandResult = await self._executor.run(command, timeout=60.0)
-                results.append(
-                    DiagnosticResult(command, outcome.exit_code, outcome.stdout, outcome.stderr, True)
-                )
+                results.append(DiagnosticResult(command, outcome.exit_code, outcome.stdout, outcome.stderr, True))
             except Exception as exc:  # best-effort: record and continue
                 results.append(DiagnosticResult(command, 1, "", str(exc), False))
         return results
@@ -40,4 +38,4 @@ class DiagnosticsRunner:
 
     @staticmethod
     def now() -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)

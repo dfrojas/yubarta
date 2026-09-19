@@ -81,9 +81,7 @@ class Product:
         incidents = await self.get("/api/v1/incidents")
         if not incidents:
             return None
-        assert len(incidents) == 1, (
-            f"Expected one incident in isolated test: {incidents}"
-        )
+        assert len(incidents) == 1, f"Expected one incident in isolated test: {incidents}"
         detail = await self.get(f"/api/v1/incidents/{incidents[0]['id']}")
         if self.apply and detail["state"] == "FAILED":
             raise AssertionError(f"Recovery failed: {detail}")

@@ -15,9 +15,7 @@ def docker(*args: str, timeout: float = 15.0) -> str:
         timeout=timeout,
     )
     if result.returncode:
-        raise RuntimeError(
-            f"docker {' '.join(args)} failed: {result.stdout}\n{result.stderr}"
-        )
+        raise RuntimeError(f"docker {' '.join(args)} failed: {result.stdout}\n{result.stderr}")
     return result.stdout.strip()
 
 

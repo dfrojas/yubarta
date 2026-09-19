@@ -98,7 +98,7 @@ async def product(
             await eventually(
                 "SSH scanner connected",
                 lambda: instance.get("/api/v1/scanners"),
-                lambda scanners: (len(scanners) == 1 and all(item["connected"] for item in scanners)),
+                lambda scanners: len(scanners) == 1 and all(item["connected"] for item in scanners),
             )
             yield instance
         finally:

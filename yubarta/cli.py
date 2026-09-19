@@ -31,7 +31,7 @@ def _get(server: str | None, path: str) -> object:
         response.raise_for_status()
     except httpx.HTTPError as exc:
         typer.echo(f"Request failed: {exc}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
     return response.json()
 
 

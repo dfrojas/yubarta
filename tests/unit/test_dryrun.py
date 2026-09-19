@@ -26,9 +26,7 @@ class _RecordingExecutor:
     async def run(self, command: str, timeout: float = 60.0) -> CommandResult:
         self.commands.append(command)
         if "is-active" in command:
-            return CommandResult(
-                command=command, exit_code=3, stdout="inactive", stderr=""
-            )
+            return CommandResult(command=command, exit_code=3, stdout="inactive", stderr="")
         return CommandResult(command=command, exit_code=0, stdout="ok", stderr="")
 
 
@@ -43,16 +41,8 @@ async def test_dry_run_skips_remediations(test_db: str) -> None:
         target=TargetConfig(host="vm", user="u", key=""),
         watch=[LogWatch(file="/x.log", match_any=["AH00957"])],
         diagnostics=["uptime"],
-        checks=[
-            CommandCheck(
-                run="sudo -n systemctl is-active --quiet tomcat9", expect_exit_code=0
-            )
-        ],
-        remediations=[
-            RemediationDef(
-                name="restart-tomcat", command="sudo -n systemctl restart tomcat9"
-            )
-        ],
+        checks=[CommandCheck(run="sudo -n systemctl is-active --quiet tomcat9", expect_exit_code=0)],
+        remediations=[RemediationDef(name="restart-tomcat", command="sudo -n systemctl restart tomcat9")],
         verify=VerifyConfig(settle_delay=0.0, interval=0.01, timeout=0.2),
     )
     service = IncidentService(
@@ -63,9 +53,7 @@ async def test_dry_run_skips_remediations(test_db: str) -> None:
         DiagnosticsRunner(recorder, config.diagnostics),
         apply=False,
     )
-    event = NormalizedEvent(
-        source="log:/x.log", target="vm", message="AH00957 fail", raw="x"
-    )
+    event = NormalizedEvent(source="log:/x.log", target="vm", message="AH00957 fail", raw="x")
     await service.handle_event(event)
     # remediation command must never execute in dry-run; only diagnostics + checks ran
     assert "sudo -n systemctl restart tomcat9" not in recorder.commands
@@ -75,7 +63,5 @@ async def test_dry_run_skips_remediations(test_db: str) -> None:
         assert incidents
         steps = await repo.list_steps(incidents[0].id)
         remediation_steps = [step for step in steps if step.kind == "remediation"]
-        assert remediation_steps and all(
-            step.state == "SKIPPED" for step in remediation_steps
-        )
+        assert remediation_steps and all(step.state == "SKIPPED" for step in remediation_steps)
     await engine.dispose()

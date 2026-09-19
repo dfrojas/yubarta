@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine
 
+from alembic import context
 from yubarta.persistence.models import Base
 
 config = context.config

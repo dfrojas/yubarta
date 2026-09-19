@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +31,7 @@ def _excerpt(text: str | None, limit: int = MAX_EXCERPT) -> str | None:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _new_id() -> str:
@@ -153,9 +153,7 @@ class IncidentRepository:
         return row
 
     async def next_sequence(self, incident_id: str) -> int:
-        result = await self._session.execute(
-            select(IncidentStepRow).where(IncidentStepRow.incident_id == incident_id)
-        )
+        result = await self._session.execute(select(IncidentStepRow).where(IncidentStepRow.incident_id == incident_id))
         return len(result.scalars().all()) + 1
 
     async def add_step(
@@ -193,9 +191,7 @@ class IncidentRepository:
 
     async def list_steps(self, incident_id: str) -> list[IncidentStepRow]:
         result = await self._session.execute(
-            select(IncidentStepRow)
-            .where(IncidentStepRow.incident_id == incident_id)
-            .order_by(IncidentStepRow.sequence)
+            select(IncidentStepRow).where(IncidentStepRow.incident_id == incident_id).order_by(IncidentStepRow.sequence)
         )
         return list(result.scalars().all())
 
@@ -208,13 +204,9 @@ class IncidentRepository:
         return list(result.scalars().all())
 
     async def list_trigger_events(self, incident_id: str) -> list[TriggerEventRow]:
-        result = await self._session.execute(
-            select(TriggerEventRow).where(TriggerEventRow.incident_id == incident_id)
-        )
+        result = await self._session.execute(select(TriggerEventRow).where(TriggerEventRow.incident_id == incident_id))
         return list(result.scalars().all())
 
     async def list_incidents(self, limit: int = 50) -> list[IncidentRow]:
-        result = await self._session.execute(
-            select(IncidentRow).order_by(IncidentRow.opened_at.desc()).limit(limit)
-        )
+        result = await self._session.execute(select(IncidentRow).order_by(IncidentRow.opened_at.desc()).limit(limit))
         return list(result.scalars().all())

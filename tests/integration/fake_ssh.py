@@ -87,7 +87,7 @@ def make_process_handler(state: FakeTargetState):  # type: ignore[no-untyped-def
                 while True:
                     try:
                         line = await asyncio.wait_for(queue.get(), timeout=30.0)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         if process.is_closing():
                             return
                         continue

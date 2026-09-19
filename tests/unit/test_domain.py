@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from yubarta.checks.runner import run_check
 from yubarta.config import CommandCheck
@@ -10,7 +13,6 @@ from yubarta.execution.ssh import CommandResult
 from yubarta.incidents.errors import ConcurrentModificationError, InvalidTransitionError
 from yubarta.incidents.state_machine import IncidentState, transition
 from yubarta.persistence.repository import IncidentRepository
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 def test_valid_lifecycle() -> None:
@@ -21,10 +23,7 @@ def test_valid_lifecycle() -> None:
 
 
 def test_prechecking_to_resolved_allowed() -> None:
-    assert (
-        transition(IncidentState.PRECHECKING, IncidentState.RESOLVED)
-        == IncidentState.RESOLVED
-    )
+    assert transition(IncidentState.PRECHECKING, IncidentState.RESOLVED) == IncidentState.RESOLVED
 
 
 def test_invalid_transitions_raise() -> None:
@@ -51,9 +50,7 @@ async def test_occ_conflict(session_factory: async_sessionmaker[AsyncSession]) -
     async with session_factory() as session:
         repo = IncidentRepository(session)
         with pytest.raises(ConcurrentModificationError):
-            await repo.transition_state(
-                incident_id, 0, IncidentState.PRECHECKING, "stale"
-            )
+            await repo.transition_state(incident_id, 0, IncidentState.PRECHECKING, "stale")
 
 
 async def test_duplicate_events_no_duplicate_incident(
@@ -63,16 +60,12 @@ async def test_duplicate_events_no_duplicate_incident(
 
     async with session_factory() as session:
         repo = IncidentRepository(session)
-        first, created_first = await repo.get_or_create_active(
-            "vm", "tomcat-unavailable"
-        )
+        first, created_first = await repo.get_or_create_active("vm", "tomcat-unavailable")
         event = NormalizedEvent(source="s", target="vm", message="m", raw="r")
         await repo.add_trigger_event(first.id, event)
         duplicate = await repo.add_trigger_event(first.id, event)
         assert duplicate is None
-        second, created_second = await repo.get_or_create_active(
-            "vm", "tomcat-unavailable"
-        )
+        second, created_second = await repo.get_or_create_active("vm", "tomcat-unavailable")
         assert first.id == second.id and created_first and not created_second
         await session.commit()
 
@@ -82,38 +75,29 @@ class _StubExecutor:
         self._exit_code = exit_code
 
     async def run(self, command: str, timeout: float = 30.0) -> CommandResult:
-        return CommandResult(
-            command=command, exit_code=self._exit_code, stdout="out", stderr=""
-        )
+        return CommandResult(command=command, exit_code=self._exit_code, stdout="out", stderr="")
 
 
 async def test_check_expectations_command() -> None:
-    ok = await run_check(
-        CommandCheck(run="is-active", expect_exit_code=0), _StubExecutor(0)
-    )
+    ok = await run_check(CommandCheck(run="is-active", expect_exit_code=0), _StubExecutor(0))
     assert ok.passed
-    bad = await run_check(
-        CommandCheck(run="is-active", expect_exit_code=0), _StubExecutor(3)
-    )
+    bad = await run_check(CommandCheck(run="is-active", expect_exit_code=0), _StubExecutor(3))
     assert not bad.passed
 
 
 async def test_remediation_sequencing_order_preserved() -> None:
     from yubarta.config import RemediationDef
 
-    defs = [
-        RemediationDef(name=name, command=cmd)
-        for name, cmd in [("a", "x"), ("b", "y"), ("c", "z")]
-    ]
+    defs = [RemediationDef(name=name, command=cmd) for name, cmd in [("a", "x"), ("b", "y"), ("c", "z")]]
     assert [item.name for item in defs] == ["a", "b", "c"]
 
 
 def test_api_response_models() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from yubarta.api import HealthResponse, IncidentSummary
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     assert HealthResponse(ok=True, time=now).ok
     summary = IncidentSummary(
         id="1",

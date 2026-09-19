@@ -18,9 +18,7 @@ async def test_status_scanners_incidents(server_url: str) -> None:
         assert status["mode"] == "dry-run"
         assert (await client.get(f"{server_url}/api/v1/scanners")).status_code == 200
         assert (await client.get(f"{server_url}/api/v1/incidents")).status_code == 200
-        assert (
-            await client.get(f"{server_url}/api/v1/incidents/missing")
-        ).status_code == 404
+        assert (await client.get(f"{server_url}/api/v1/incidents/missing")).status_code == 404
 
 
 def test_cli_uses_http_not_postgres(server_url: str) -> None:

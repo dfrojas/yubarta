@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 
 from yubarta.events.models import NormalizedEvent
 
@@ -66,7 +66,7 @@ class BaseScanner:
     def _note_event(self) -> None:
         import datetime
 
-        self._status.last_event_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        self._status.last_event_at = datetime.datetime.now(datetime.UTC).isoformat()
 
     def _note_error(self, message: str) -> None:
         self._status.last_error = message

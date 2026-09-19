@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -106,8 +106,8 @@ class IncidentService:
                 await repo.update_step(
                     step.id,
                     state=StepState.SUCCEEDED.value if result.ok and result.exit_code == 0 else StepState.FAILED.value,
-                    started_at=datetime.now(timezone.utc),
-                    finished_at=datetime.now(timezone.utc),
+                    started_at=datetime.now(UTC),
+                    finished_at=datetime.now(UTC),
                     exit_code=result.exit_code,
                     stdout_excerpt=result.stdout,
                     stderr_excerpt=result.stderr,
@@ -126,15 +126,15 @@ class IncidentService:
                 await repo.update_step(
                     step.id,
                     state=StepState.SUCCEEDED.value if outcome.passed else StepState.FAILED.value,
-                    started_at=datetime.now(timezone.utc),
-                    finished_at=datetime.now(timezone.utc),
+                    started_at=datetime.now(UTC),
+                    finished_at=datetime.now(UTC),
                     exit_code=outcome.exit_code,
                     stdout_excerpt=outcome.detail,
                     result={"passed": outcome.passed, "detail": outcome.detail},
                 )
             if healthy:
                 row = await repo.transition_state(row.id, row.version, IncidentState.RESOLVED, "precheck healthy")
-                row.resolved_at = datetime.now(timezone.utc)
+                row.resolved_at = datetime.now(UTC)
                 row.resolved_by_step_id = None
                 await session.commit()
                 return
@@ -151,7 +151,7 @@ class IncidentService:
                 await repo.update_step(
                     remediation_step.id,
                     state=StepState.RUNNING.value,
-                    started_at=datetime.now(timezone.utc),
+                    started_at=datetime.now(UTC),
                 )
                 await session.commit()
                 remediation_step_id = remediation_step.id
@@ -162,7 +162,7 @@ class IncidentService:
                     await repo.update_step(
                         remediation_step_id,
                         state=StepState.SKIPPED.value,
-                        finished_at=datetime.now(timezone.utc),
+                        finished_at=datetime.now(UTC),
                         error="dry-run: remediation skipped",
                     )
                     await session.commit()
@@ -185,7 +185,7 @@ class IncidentService:
                 await repo.update_step(
                     remediation_step_id,
                     state=StepState.SUCCEEDED.value if remediation_ok else StepState.FAILED.value,
-                    finished_at=datetime.now(timezone.utc),
+                    finished_at=datetime.now(UTC),
                     exit_code=outcome.exit_code if outcome else None,
                     stdout_excerpt=outcome.stdout if outcome else "",
                     stderr_excerpt=outcome.stderr if outcome else "",
@@ -198,12 +198,21 @@ class IncidentService:
                         [item.name for item in self._config.remediations].index(remediation.name) + 1 :
                     ]
                     if not remaining:
-                        row = await repo.transition_state(row.id, row.version, IncidentState.VERIFYING, f"remediation {remediation.name} failed")
-                        row = await repo.transition_state(row.id, row.version, IncidentState.FAILED, f"remediation {remediation.name} failed: {remediation_error}")
+                        row = await repo.transition_state(
+                            row.id, row.version, IncidentState.VERIFYING, f"remediation {remediation.name} failed"
+                        )
+                        row = await repo.transition_state(
+                            row.id,
+                            row.version,
+                            IncidentState.FAILED,
+                            f"remediation {remediation.name} failed: {remediation_error}",
+                        )
                         row.failure_reason = remediation_error
                     await session.commit()
                     continue
-                row = await repo.transition_state(row.id, row.version, IncidentState.VERIFYING, f"verify after {remediation.name}")
+                row = await repo.transition_state(
+                    row.id, row.version, IncidentState.VERIFYING, f"verify after {remediation.name}"
+                )
                 await session.commit()
 
             # Verification with convergence
@@ -223,20 +232,24 @@ class IncidentService:
                     await repo.update_step(
                         verify_step.id,
                         state=StepState.SUCCEEDED.value if verify_outcome.passed else StepState.FAILED.value,
-                        started_at=datetime.now(timezone.utc),
-                        finished_at=datetime.now(timezone.utc),
+                        started_at=datetime.now(UTC),
+                        finished_at=datetime.now(UTC),
                         exit_code=verify_outcome.exit_code,
                         stdout_excerpt=verify_outcome.detail,
                         result={"passed": verify_outcome.passed, "after": remediation.name},
                     )
                 if healthy:
-                    row = await repo.transition_state(row.id, row.version, IncidentState.RESOLVED, f"recovered after {remediation.name}")
-                    row.resolved_at = datetime.now(timezone.utc)
+                    row = await repo.transition_state(
+                        row.id, row.version, IncidentState.RESOLVED, f"recovered after {remediation.name}"
+                    )
+                    row.resolved_at = datetime.now(UTC)
                     row.resolved_by_step_id = remediation_step_id
                     await session.commit()
                     return
                 # still unhealthy -> back to REMEDIATING for next remediation
-                row = await repo.transition_state(row.id, row.version, IncidentState.REMEDIATING, f"still unhealthy after {remediation.name}")
+                row = await repo.transition_state(
+                    row.id, row.version, IncidentState.REMEDIATING, f"still unhealthy after {remediation.name}"
+                )
                 await session.commit()
 
         # Exhausted remediations (or dry-run): fail unless dry-run semantics say otherwise.
@@ -252,8 +265,12 @@ class IncidentService:
                 try:
                     current = IncidentState(row.state)
                     if current == IncidentState.REMEDIATING:
-                        row = await repo.transition_state(row.id, row.version, IncidentState.VERIFYING, "dry-run verification")
-                    row = await repo.transition_state(row.id, row.version, IncidentState.FAILED, "dry-run: remediations skipped")
+                        row = await repo.transition_state(
+                            row.id, row.version, IncidentState.VERIFYING, "dry-run verification"
+                        )
+                    row = await repo.transition_state(
+                        row.id, row.version, IncidentState.FAILED, "dry-run: remediations skipped"
+                    )
                     row.failure_reason = "dry-run: remediations skipped"
                 except Exception:
                     pass
@@ -262,10 +279,14 @@ class IncidentService:
             try:
                 current = IncidentState(row.state)
                 if current == IncidentState.REMEDIATING:
-                    row = await repo.transition_state(row.id, row.version, IncidentState.VERIFYING, "exhausted remediations")
+                    row = await repo.transition_state(
+                        row.id, row.version, IncidentState.VERIFYING, "exhausted remediations"
+                    )
                     current = IncidentState.VERIFYING
                 if current == IncidentState.VERIFYING:
-                    row = await repo.transition_state(row.id, row.version, IncidentState.FAILED, "exhausted remediations")
+                    row = await repo.transition_state(
+                        row.id, row.version, IncidentState.FAILED, "exhausted remediations"
+                    )
                     row.failure_reason = "exhausted remediations without recovery"
             except Exception:
                 pass

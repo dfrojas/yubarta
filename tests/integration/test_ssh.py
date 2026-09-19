@@ -22,9 +22,7 @@ async def test_remote_command_execution(
     result = await executor.run("uptime", timeout=10.0)
     assert result.exit_code == 0
     state.healthy = False
-    failed = await executor.run(
-        "sudo -n systemctl is-active --quiet tomcat9", timeout=10.0
-    )
+    failed = await executor.run("sudo -n systemctl is-active --quiet tomcat9", timeout=10.0)
     assert failed.exit_code == 3
 
 
@@ -63,9 +61,7 @@ async def test_command_scanner_detects_failure(
         received.append(event)
 
     state.healthy = False
-    watch = CommandWatch(
-        run="sudo -n systemctl is-active --quiet tomcat9", interval="100ms"
-    )
+    watch = CommandWatch(run="sudo -n systemctl is-active --quiet tomcat9", interval="100ms")
     scanner = RemoteCommandScanner(name="c", target=_target(port), watch=watch)
     await scanner.start(handler)
     try:

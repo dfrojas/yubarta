@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import shlex
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import asyncssh
 
@@ -61,10 +61,12 @@ class RemoteFileScanner(BaseScanner):
                 try:
                     await asyncio.wait_for(self._stop.wait(), timeout=delay)
                     return
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
-    async def _stream(self, conn: asyncssh.SSHClientConnection, handler: EventHandler, aggregator: MultilineAggregator) -> None:
+    async def _stream(
+        self, conn: asyncssh.SSHClientConnection, handler: EventHandler, aggregator: MultilineAggregator
+    ) -> None:
         backfill = self._watch.backfill_lines
         filename = shlex.quote(self._watch.file)
         # Backfill first, then live stream. tail -F semantic.
@@ -107,7 +109,7 @@ class RemoteFileScanner(BaseScanner):
         event = NormalizedEvent(
             source=f"log:{self._watch.file}",
             target=self._target.host,
-            observed_at=datetime.now(timezone.utc),
+            observed_at=datetime.now(UTC),
             message=parsed.message,
             raw=logical_line,
             level=parsed.level,

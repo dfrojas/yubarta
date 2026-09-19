@@ -49,9 +49,7 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
             received.append(event)
             await service.handle_event(event)
 
-        scanner = RemoteFileScanner(
-            name="reconnect", target=config.target, watch=config.watch[0]
-        )  # type: ignore[arg-type]
+        scanner = RemoteFileScanner(name="reconnect", target=config.target, watch=config.watch[0])  # type: ignore[arg-type]
         await scanner.start(handler)
         await asyncio.sleep(1.0)
         assert scanner.status.connected
@@ -82,7 +80,7 @@ async def test_ssh_reconnect_backfill_exactly_once(test_db: str) -> None:
         listener.close()
         try:
             await asyncio.wait_for(listener.wait_closed(), timeout=10.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         if engine is not None:
             await engine.dispose()

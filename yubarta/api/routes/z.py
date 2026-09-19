@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Response
 
@@ -26,4 +26,4 @@ def whale() -> Response:
 
 @router.get("/healthz", response_model=HealthResponse)
 async def healthz() -> HealthResponse:
-    return HealthResponse(ok=True, time=datetime.now(timezone.utc))
+    return HealthResponse(ok=True, time=datetime.now(UTC))

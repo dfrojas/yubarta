@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import asyncssh
 
@@ -53,7 +53,7 @@ class RemoteCommandScanner(BaseScanner):
                                 event = NormalizedEvent(
                                     source=f"command:{self._watch.run}",
                                     target=self._target.host,
-                                    observed_at=datetime.now(timezone.utc),
+                                    observed_at=datetime.now(UTC),
                                     message=f"Command failed (exit={exit_code}): {self._watch.run}\n{stdout.strip()}",
                                     raw=stdout.strip() or f"exit={exit_code}",
                                     fields={
@@ -69,7 +69,7 @@ class RemoteCommandScanner(BaseScanner):
                         try:
                             await asyncio.wait_for(self._stop.wait(), timeout=interval)
                             return
-                        except asyncio.TimeoutError:
+                        except TimeoutError:
                             continue
             except asyncio.CancelledError:
                 raise
@@ -80,5 +80,5 @@ class RemoteCommandScanner(BaseScanner):
                 try:
                     await asyncio.wait_for(self._stop.wait(), timeout=self._reconnect.delay_for(attempt))
                     return
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue

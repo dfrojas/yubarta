@@ -64,9 +64,7 @@ async def test_java_failure_is_audited_and_only_apply_recovers(
         assert incident["state"] == "RESOLVED", incident
         assert incident["resolved_by_step_id"] == remediations[-1]["id"], incident
         assert all(step["state"] == "SUCCEEDED" for step in remediations), incident
-        assert any(step["kind"] == "verification" for step in incident["steps"]), (
-            incident
-        )
+        assert any(step["kind"] == "verification" for step in incident["steps"]), incident
         pid_after = java_target.run("cat", "/run/yubarta-app/app.pid")
         assert pid_after.isdigit() and pid_after != pid_before, (pid_before, pid_after)
         await eventually(
@@ -81,9 +79,7 @@ async def test_java_failure_is_audited_and_only_apply_recovers(
         deadline = time.monotonic() + 2.0
         while time.monotonic() < deadline:
             product.assert_running()
-            assert await application_down() != "HTTP 200", (
-                "Dry-run restarted the application"
-            )
+            assert await application_down() != "HTTP 200", "Dry-run restarted the application"
             await asyncio.sleep(0.2)
 
     # Smoke-test the installed CLI against the same running Control API.

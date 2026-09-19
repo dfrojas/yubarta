@@ -14,9 +14,7 @@ TOKEN = "s3cret-token"
 ENV_NAME = "YUBARTA_TEST_API_TOKEN"
 
 
-async def _get(
-    app: FastAPI, path: str, headers: dict[str, str] | None = None
-) -> httpx.Response:
+async def _get(app: FastAPI, path: str, headers: dict[str, str] | None = None) -> httpx.Response:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         return await client.get(path, headers=headers or {})
@@ -47,9 +45,7 @@ async def test_versioned_route_rejects_wrong_token(auth_app: FastAPI) -> None:
 
 
 async def test_versioned_route_accepts_token(auth_app: FastAPI) -> None:
-    response = await _get(
-        auth_app, "/api/v1/status", {"Authorization": f"Bearer {TOKEN}"}
-    )
+    response = await _get(auth_app, "/api/v1/status", {"Authorization": f"Bearer {TOKEN}"})
     assert response.status_code == 200
 
 
@@ -59,8 +55,6 @@ def test_missing_token_env_fails_fast(monkeypatch: pytest.MonkeyPatch) -> None:
         target=TargetConfig(host="vm", user="u", key=""),
         api=ApiConfig(token_from_env=ENV_NAME),
     )
-    runtime = YubartaRuntime(
-        config, apply=False, database_url="sqlite+aiosqlite:///:memory:"
-    )
+    runtime = YubartaRuntime(config, apply=False, database_url="sqlite+aiosqlite:///:memory:")
     with pytest.raises(RuntimeError):
         create_app(runtime)

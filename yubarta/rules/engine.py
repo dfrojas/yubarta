@@ -19,9 +19,7 @@ class RuleEngine:
         self._rules = rules
 
     @classmethod
-    def from_watches(
-        cls, watches: list, default_target: str = ""
-    ) -> "RuleEngine":
+    def from_watches(cls, watches: list, default_target: str = "") -> RuleEngine:
         rules: list[Rule] = []
         for watch in watches:
             kind = getattr(watch, "kind", "log")
