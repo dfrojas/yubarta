@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+
+def main() -> None:
+    if os.geteuid() != 0:
+        raise SystemExit("Run fix-tomcat-restart-policy as root")
+    path = Path("/etc/systemd/system/tomcat9.service.d/zz-yubarta.conf")
+    desired = "[Service]\nRestart=on-failure\nRestartSec=10s\n"
+    if not path.exists() or path.read_text() != desired:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+            stream.write(desired)
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.fchmod(stream.fileno(), 0o644)
+        os.replace(stream.name, path)
+        subprocess.run(["systemctl", "daemon-reload"], check=True)
+    effective = subprocess.check_output(["systemctl", "show", "tomcat9", "--property=Restart", "--property=RestartUSec"], text=True)
+    if "Restart=on-failure" not in effective.splitlines() or "RestartUSec=10s" not in effective.splitlines():
+        # A previous interrupted run may have installed the drop-in before reload.
+        subprocess.run(["systemctl", "daemon-reload"], check=True)
+        effective = subprocess.check_output(["systemctl", "show", "tomcat9", "--property=Restart", "--property=RestartUSec"], text=True)
+        if "Restart=on-failure" not in effective.splitlines() or "RestartUSec=10s" not in effective.splitlines():
+            raise SystemExit("Effective restart policy does not match; inspect other systemd overrides")
+    print("Effective restart policy: on-failure, 10s")
+
+
+if __name__ == "__main__":
+    main()

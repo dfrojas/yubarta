@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+import fcntl
+import os
+from pathlib import Path
+import subprocess
+
+
+def run(*command: str) -> str:
+    return subprocess.check_output(command, text=True).strip()
+
+
+def main() -> None:
+    if os.geteuid() != 0:
+        raise SystemExit("Run ensure-swap as root")
+    with open("/run/yubarta-swap.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        active = run("swapon", "--show", "--bytes", "--noheadings", "--output", "NAME,SIZE")
+        total = sum(int(line.rsplit(None, 1)[1]) for line in active.splitlines())
+        swap = Path("/swapfile-yubarta")
+        size = 2 * 1024**3
+        active_names = [line.rsplit(None, 1)[0] for line in active.splitlines()]
+        if total >= size and str(swap) not in active_names:
+            print("At least 2 GiB swap is active")
+            return
+        if swap.is_symlink():
+            raise SystemExit("Refusing a symbolic-link swapfile")
+        if swap.exists():
+            if not swap.is_file() or swap.stat().st_size < size:
+                raise SystemExit("Existing swapfile is too small or not a regular file; left unchanged")
+            if run("blkid", "-p", "-s", "TYPE", "-o", "value", str(swap)) != "swap":
+                raise SystemExit("Existing file is not swap; left unchanged")
+        else:
+            # Exclusive creation prevents overwriting existing data.
+            with swap.open("xb") as stream:
+                os.fchmod(stream.fileno(), 0o600)
+                os.posix_fallocate(stream.fileno(), 0, size)
+            subprocess.run(["mkswap", str(swap)], check=True)
+        os.chmod(swap, 0o600)
+        with open("/etc/fstab", "a+") as stream:
+            stream.seek(0)
+            entries = [line.split() for line in stream if line.strip() and not line.lstrip().startswith("#")]
+            if not any(entry[0] == str(swap) and len(entry) > 2 and entry[2] == "swap" for entry in entries):
+                stream.write(f"\n{swap} none swap sw 0 0\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        if str(swap) not in active_names:
+            subprocess.run(["swapon", str(swap)], check=True)
+        print("2 GiB swap active and persistent")
+
+
+if __name__ == "__main__":
+    main()

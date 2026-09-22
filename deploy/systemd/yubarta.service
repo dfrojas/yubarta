@@ -1,0 +1,26 @@
+[Unit]
+Description=Yubarta infrastructure remediation
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=yubarta
+Group=yubarta
+WorkingDirectory=/opt/yubarta
+EnvironmentFile=/etc/yubarta/yubarta.env
+ExecStart=/opt/yubarta/venv/bin/yubarta serve --config /etc/yubarta/config.yaml --apply
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=60s
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -14,3 +14,8 @@ yubarta.db
 research
 /build
 /yubarta.egg*
+.venv/
+.terraform/
+*.tfstate*
+*.tfvars
+dist/

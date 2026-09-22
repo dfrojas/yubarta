@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "yubarta"
+version = "0.1.0"
+description = "Single-host, audited infrastructure remediation"
+authors = ["Yubarta contributors"]
+packages = [{include = "yubarta"}]
+include = ["yubarta/controllers/remediations/scripts/*", "yubarta/drivers/db/migrations/**/*"]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+asyncssh = "2.24.0"
+pydantic = "2.12.5"
+pydantic-settings = "2.15.0"
+fastapi = "0.141.1"
+uvicorn = "0.53.0"
+httpx = "0.28.1"
+PyYAML = "6.0.3"
+SQLAlchemy = {version = "2.0.54", extras = ["asyncio"]}
+asyncpg = "0.30.0"
+alembic = "1.20.0"
+typer = "0.27.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "9.1.1"
+pytest-asyncio = "1.4.0"
+
+[tool.poetry.scripts]
+yubarta = "yubarta.main:app"
+
+[build-system]
+requires = ["poetry-core==2.2.1"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = ["integration: real PostgreSQL and SSH", "e2e: full daemon recovery over SSH"]

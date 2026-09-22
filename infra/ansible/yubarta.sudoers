@@ -1,0 +1,3 @@
+Cmnd_Alias YUBARTA_REMEDIATE = /opt/yubarta/ensure-swap "", /opt/yubarta/fix-tomcat-restart-policy "", /usr/bin/systemctl restart tomcat9
+Cmnd_Alias YUBARTA_OBSERVE = /usr/bin/systemctl is-failed tomcat9, /usr/bin/systemctl is-active --quiet tomcat9, /usr/bin/systemctl status tomcat9 --no-pager -l, /usr/bin/systemctl cat tomcat9.service, /usr/bin/journalctl -k --no-pager, /usr/bin/pg_lsclusters "", /usr/bin/grep shared_buffers /etc/postgresql/14/main/postgresql.conf
+yubarta ALL=(root) NOPASSWD: YUBARTA_REMEDIATE, YUBARTA_OBSERVE

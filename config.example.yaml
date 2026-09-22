@@ -1,0 +1,60 @@
+target:
+  host: ${YUBARTA_SSH_HOST}
+  user: ${YUBARTA_SSH_USER}
+  key: ${YUBARTA_SSH_KEY_PATH}
+  known_hosts: ${YUBARTA_SSH_KNOWN_HOSTS}
+
+watch:
+  - log:
+      name: apache-errors
+      file: /var/log/apache2/error.log
+      backfill: 100
+      match_any: [AH00957, AJP, Connection refused]
+  - command:
+      name: tomcat-failed
+      run: sudo -n systemctl is-failed tomcat9
+      interval: 30s
+      expect:
+        exit_code: 0
+
+diagnostics:
+  - uptime
+  - df -h /
+  - free -h
+  - sudo -n pg_lsclusters
+  - sudo -n systemctl status tomcat9 --no-pager -l
+  - sudo -n systemctl cat tomcat9.service
+  - sudo -n journalctl -k --no-pager | grep -i "killed process"
+  - grep -i 'ajp\|proxy' /var/log/apache2/error.log | tail -30
+  - grep -i xmx /etc/default/tomcat9
+  - sudo -n grep shared_buffers /etc/postgresql/14/main/postgresql.conf
+
+remediations:
+  - name: ensure-swap
+    command: sudo -n /opt/yubarta/ensure-swap
+  - name: fix-restart-policy
+    command: sudo -n /opt/yubarta/fix-tomcat-restart-policy
+  - name: restart-tomcat
+    command: sudo -n systemctl restart tomcat9
+
+checks:
+  - run: sudo -n systemctl is-active --quiet tomcat9
+    expect:
+      exit_code: 0
+  - http: ${YUBARTA_HEALTH_URL}
+    expect:
+      status: 200
+    # For authenticated health endpoints:
+    # auth:
+    #   bearer_from_env: YUBARTA_HEALTH_TOKEN
+    #   headers_from_env:
+    #     X-API-Key: YUBARTA_HEALTH_API_KEY
+
+verify:
+  settle_delay: 2s
+  interval: 2s
+  timeout: 30s
+
+api:
+  host: 127.0.0.1
+  port: 8787

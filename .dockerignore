@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.git/
+.env
+*.md
+docs/
+build/
+*.egg-info/
+dist/

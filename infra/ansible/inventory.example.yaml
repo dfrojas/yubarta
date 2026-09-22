@@ -1,0 +1,17 @@
+all:
+  children:
+    control:
+      hosts:
+        control.example.invalid:
+    target:
+      hosts:
+        target.example.invalid:
+  vars:
+    ansible_user: deploy
+    yubarta_wheel: "{{ playbook_dir }}/../../dist/yubarta-0.1.0-py3-none-any.whl"
+    yubarta_config: "{{ playbook_dir }}/../../config.example.yaml"
+    # Absolute local paths supplied in a private inventory or via --extra-vars:
+    # yubarta_environment: /secure/yubarta.env
+    # yubarta_private_key: /secure/identity
+    # yubarta_public_key: /secure/identity.pub
+    # yubarta_known_hosts: /secure/known_hosts

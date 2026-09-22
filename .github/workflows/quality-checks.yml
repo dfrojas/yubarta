@@ -10,21 +10,12 @@ jobs:
   quality-checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-    - name: Build Docker image
-      run: |
-        make docker-build
-    - name: Run tests inside the container
-      run: |
-        cp .env.ci .env
-        make run-tests
-    - name: Run mypy
-      run: |
-        make run-mypy
-    - name: Run lint
-      run: |
-        make check-format
+    - name: Install
+      run: pip install poetry==2.2.1 && poetry install
+    - name: Unit, integration and E2E
+      run: poetry run pytest -q

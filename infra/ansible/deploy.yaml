@@ -1,0 +1,125 @@
+- name: Install target remediation commands
+  hosts: target
+  become: true
+  tasks:
+    - name: Install target prerequisites
+      ansible.builtin.apt:
+        name: [python3, sudo, util-linux]
+        state: present
+        update_cache: true
+    - name: Create SSH execution user
+      ansible.builtin.user:
+        name: yubarta
+        shell: /bin/bash
+        groups: adm
+        append: true
+        create_home: true
+    - name: Create target directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: /opt/yubarta, owner: root, mode: '0755'}
+        - {path: /home/yubarta/.ssh, owner: yubarta, mode: '0700'}
+    - name: Install dedicated SSH public key
+      ansible.builtin.copy:
+        src: "{{ yubarta_public_key }}"
+        dest: /home/yubarta/.ssh/authorized_keys
+        owner: yubarta
+        group: yubarta
+        mode: '0600'
+    - name: Install root-owned remediation scripts
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../yubarta/controllers/remediations/scripts/{{ item }}"
+        dest: "/opt/yubarta/{{ item }}"
+        owner: root
+        group: root
+        mode: '0755'
+      loop: [ensure-swap, fix-tomcat-restart-policy]
+    - name: Install command allowlist
+      ansible.builtin.copy:
+        src: yubarta.sudoers
+        dest: /etc/sudoers.d/yubarta
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s
+
+- name: Install Yubarta control daemon
+  hosts: control
+  become: true
+  tasks:
+    - name: Require Python 3.12 or later on control host
+      ansible.builtin.assert:
+        that: ansible_facts.python.version.major == 3 and ansible_facts.python.version.minor >= 12
+    - name: Install Python environment support
+      ansible.builtin.apt:
+        name: [python3-venv, python3-pip]
+        state: present
+        update_cache: true
+    - name: Create daemon user
+      ansible.builtin.user:
+        name: yubarta
+        system: true
+        create_home: false
+    - name: Create control directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: yubarta
+        mode: '0750'
+      loop: [/opt/yubarta, /etc/yubarta]
+    - name: Copy application wheel
+      ansible.builtin.copy:
+        src: "{{ yubarta_wheel }}"
+        dest: "/opt/yubarta/{{ yubarta_wheel | basename }}"
+        mode: '0644'
+      register: wheel_copy
+    - name: Install application
+      ansible.builtin.pip:
+        name: "/opt/yubarta/{{ yubarta_wheel | basename }}"
+        virtualenv: /opt/yubarta/venv
+        virtualenv_command: python3 -m venv
+        extra_args: "{{ '--force-reinstall' if wheel_copy.changed else '' }}"
+      notify: Restart Yubarta
+    - name: Install configuration
+      ansible.builtin.copy:
+        src: "{{ yubarta_config }}"
+        dest: /etc/yubarta/config.yaml
+        owner: root
+        group: yubarta
+        mode: '0640'
+      notify: Restart Yubarta
+    - name: Install secrets and trusted host keys
+      ansible.builtin.copy:
+        src: "{{ item.source }}"
+        dest: "/etc/yubarta/{{ item.name }}"
+        owner: yubarta
+        group: yubarta
+        mode: '0600'
+      loop:
+        - {source: "{{ yubarta_environment }}", name: yubarta.env}
+        - {source: "{{ yubarta_private_key }}", name: identity}
+        - {source: "{{ yubarta_known_hosts }}", name: known_hosts}
+      no_log: true
+      notify: Restart Yubarta
+    - name: Install systemd service
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../deploy/systemd/yubarta.service"
+        dest: /etc/systemd/system/yubarta.service
+        mode: '0644'
+      notify: Restart Yubarta
+    - name: Enable daemon
+      ansible.builtin.systemd_service:
+        name: yubarta
+        enabled: true
+        state: started
+        daemon_reload: true
+  handlers:
+    - name: Restart Yubarta
+      ansible.builtin.systemd_service:
+        name: yubarta
+        state: restarted
+        daemon_reload: true
