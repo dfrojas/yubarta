@@ -9,6 +9,7 @@ Apply to all `.py` files. Several of these (line length, import ordering) are al
 
 ## Rules
 
+- **Poetry** as dependency manager and local development.
 - **Pin dependencies to the full `major.minor.patch`** in Poetry, never just major or major.minor.
 - **Use current Python features** rather than patterns that predate them.
 - **Handle errors at the top of a function with early returns**, not deeply nested conditionals.
@@ -32,12 +33,8 @@ Apply to everything under `tests/`.
 
 - **pytest**, not unittest-style classes.
 - **Prefer fixtures over ad-hoc helper functions** for anything reused across tests.
-- **`conftest.py` is the config/fixture file** for a directory's shared setup, not a dumping ground.
+- **Fixture structure lives in the `pytest-fixtures` skill.** Shared fixtures go in `tests/fixtures/<domain>.py` with a `pytest_plugins` registry in `tests/conftest.py`, not in test modules or `conftest.py` bodies.
 - **Folder layout mirrors use cases**, not implementation modules. `tests/unit/` and `tests/integration/` split by what's being verified, matching the project's existing layout.
-
-# API Style
-
-Applies to any capability's `router.py` and `routes/` (e.g. `yubarta/ingestion/router.py`, `yubarta/ingestion/routes/`). Each capability owns and versions its own router; there is no central `api_server` module.
 
 ## Design
 
@@ -46,11 +43,3 @@ Applies to any capability's `router.py` and `routes/` (e.g. `yubarta/ingestion/r
 - **Follow the OpenAPI specification**, lean on FastAPI's built-in OpenAPI/JSON Schema generation rather than hand-rolling docs.
 - **Rate limiting is a real design concern**, not an afterthought, for any route that accepts external input (webhooks especially).
 - **Standard REST error handling**: meaningful status codes, `HTTPException` with a clear detail message, not a generic 500 for everything.
-
-## FastAPI implementation
-
-- **Prefer lifespan context managers over `@app.on_event`** for startup/shutdown.
-- **`def` for synchronous work, `async def` for actual I/O-bound work.** Don't mark something `async` just by convention if it never awaits anything.
-- **Use FastAPI's dependency injection** for shared resources and state (the existing `get_signal_store`/`get_inventory` singleton-dependency pattern), not module-level globals reached into directly from route handlers.
-- **SQLAlchemy 2.0 style** for any ORM usage in a route or its dependencies.
-- **CORS configured for local dev**, revisit before anything is exposed beyond localhost.

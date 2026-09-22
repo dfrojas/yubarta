@@ -12,3 +12,5 @@ yubarta.db
 .pytest_cache/
 .mypy_cache/
 research
+/build
+/yubarta.egg*
