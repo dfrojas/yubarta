@@ -1,0 +1,21 @@
+name: yubarta-e2e-java-debug
+services:
+  sandbox:
+    build: .
+    ports:
+      - "127.0.0.1::22"
+      - "127.0.0.1::8080"
+    environment:
+      - YUBARTA_ENV=sandbox
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: yubarta
+      POSTGRES_PASSWORD: yubarta
+      POSTGRES_DB: yubarta
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata: {}

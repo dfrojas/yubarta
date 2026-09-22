@@ -1,0 +1,4 @@
+#!/bin/bash
+# restart-app (E2E): restart the real JVM workload, then wait for health.
+set -euo pipefail
+exec /usr/local/bin/appctl restart

@@ -6,6 +6,9 @@ CRITICAL: DO NOT delegate tasks to subagents. Perform all work, file reading, an
 
 Skills, rules, etc can be found in /.agents in the root of the repository.
 
+For changes to automated E2E tests or their scenarios, read and apply
+`.agents/skills/e2e-testing/SKILL.md`.
+
 ## Chat Interactions
 - Do not end our conversations with questions
 - Do not add introductions in your responses like "apologies, my bad, you are right", etc. Always straight to the point

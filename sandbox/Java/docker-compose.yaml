@@ -1,0 +1,30 @@
+name: yubarta-manual-java
+services:
+  tomcat:
+    build: .
+    ports:
+      - "127.0.0.1:${YUBARTA_JAVA_SSH_PORT:-2222}:22"
+      - "127.0.0.1:${YUBARTA_JAVA_HTTP_PORT:-18080}:8080"
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --max-time, "2", http://127.0.0.1:8080/health]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+  postgres:
+    image: postgres:16.13
+    environment:
+      POSTGRES_USER: yubarta
+      POSTGRES_PASSWORD: yubarta
+      POSTGRES_DB: yubarta
+    ports:
+      - "127.0.0.1:${YUBARTA_JAVA_DB_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U yubarta -d yubarta]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata: {}

@@ -1,0 +1,8 @@
+#!/bin/bash
+# fix-restart-policy (E2E): record intent only; does not configure systemd or Tomcat.
+set -euo pipefail
+CONF_DIR="/etc/yubarta-sandbox"
+CONF_FILE="${CONF_DIR}/restart-policy.conf"
+mkdir -p "$CONF_DIR"
+printf 'UNIT=yubarta-java-app\nRestart=on-failure\nRestartSec=10s\n' > "$CONF_FILE"
+echo "restart policy recorded at $CONF_FILE"

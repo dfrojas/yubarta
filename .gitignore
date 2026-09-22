@@ -11,4 +11,7 @@ yubarta.db
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
+.venv/
 research
+/build/
+/dist/
