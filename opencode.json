@@ -3,5 +3,5 @@
   "experimental": {
     "openTelemetry": true
   },
-  "plugin": ["@langfuse/opencode-observability-plugin@latest"]
+  "plugin": ["@langfuse/opencode-observability-plugin@latest", "@dietrichgebert/ponytail"]
 }
